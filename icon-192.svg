@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="PagoClaro">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f8f1e4"/>
+      <stop offset="1" stop-color="#e9d9bf"/>
+    </linearGradient>
+    <linearGradient id="clay" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cb7442"/>
+      <stop offset="1" stop-color="#b0542c"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#785a32" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="url(#paper)"/>
+  <g stroke="#d9cbb0" stroke-width="2" opacity="0.55" stroke-linecap="round">
+    <line x1="38" y1="46" x2="154" y2="46"/>
+    <line x1="38" y1="66" x2="154" y2="66"/>
+    <line x1="38" y1="126" x2="154" y2="126"/>
+    <line x1="38" y1="146" x2="154" y2="146"/>
+  </g>
+  <circle cx="96" cy="96" r="52" fill="url(#clay)" filter="url(#soft)"/>
+  <circle cx="96" cy="96" r="52" fill="none" stroke="#924321" stroke-width="2.5"/>
+  <circle cx="96" cy="96" r="43" fill="none" stroke="#e8af78" stroke-width="1.6" opacity="0.6"/>
+  <text x="96" y="99" text-anchor="middle" dominant-baseline="central"
+        font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" fill="#fbf3e4">$</text>
+</svg>
