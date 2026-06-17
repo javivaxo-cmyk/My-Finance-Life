@@ -17,7 +17,9 @@ Built with **only** HTML, CSS, and vanilla JavaScript. All data lives in
   card payment methods; search, filter, sort; CSV import/export.
 - **Credit Cards & Debts** — card balances, auto-calculated available credit,
   a per-card movement **ledger**, and a multi-scenario **balance projection
-  chart** (SVG) using estimated CAT and average monthly spend.
+  chart** (SVG) using estimated CAT and average monthly spend. The average
+  monthly spend per card is **auto-calculated** from the trailing 30.4-day
+  purchase history (toggle off to enter it manually).
 - **Payment Planner** — allocates available money across cards/debts by urgency.
 - **Scenario Simulator** — test conservative / balanced / aggressive /
   savings-first / custom strategies.
@@ -37,6 +39,9 @@ Built with **only** HTML, CSS, and vanilla JavaScript. All data lives in
   balance never goes below zero and available credit never exceeds the limit.
 - Projection: `monthlyRate = (1 + CAT/100)^(1/12) − 1`, then
   `nextBalance = balance + avgSpend + interest − payment` per month.
+- `avgSpend` defaults to the sum of the card's `purchase` movements over the
+  last **30.4 days** (one average month). With auto-averaging on, this live
+  figure drives the projections; turning it off uses the manual entry instead.
 
 ## Run locally
 

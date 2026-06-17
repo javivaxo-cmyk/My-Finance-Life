@@ -161,6 +161,7 @@ function normalizeCard(c) {
     priority: PRIORITIES.includes(c.priority) ? c.priority : "medium",
     catAnnual: Math.max(0, cleanNumber(c.catAnnual)),
     averageMonthlySpend: Math.max(0, cleanNumber(c.averageMonthlySpend)),
+    autoAverageSpend: c.autoAverageSpend !== false,
     expectedMonthlyPayment: Math.max(0, cleanNumber(c.expectedMonthlyPayment)),
     notes: String(c.notes || ""),
     isActive: c.isActive !== false,
@@ -739,6 +740,30 @@ function catToMonthlyRate(catAnnual) {
   return Math.pow(1 + annual, 1 / 12) - 1;
 }
 
+// One average calendar month, used as the trailing window for spend averaging.
+const AVG_MONTH_DAYS = 30.4;
+
+// Auto monthly average: total credit-card purchases on this card during the
+// trailing 30.4-day window (one average month) ⇒ the card's monthly run-rate.
+function computeAutoAverageMonthlySpend(card, windowDays = AVG_MONTH_DAYS) {
+  const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+  return appData.cardMovements.reduce((sum, m) => {
+    if (m.cardId !== card.id || m.type !== "purchase") return sum;
+    const t = Date.parse(m.date || m.createdAt || "");
+    if (Number.isNaN(t) || t < cutoff) return sum;
+    return sum + cleanNumber(m.amount);
+  }, 0);
+}
+
+// Spend figure the projection engine should use: the live auto value when
+// auto-averaging is on (falling back to the manual entry while there's no
+// history yet), otherwise the user's manual override.
+function effectiveMonthlySpend(card) {
+  if (card.autoAverageSpend === false) return cleanNumber(card.averageMonthlySpend);
+  const auto = computeAutoAverageMonthlySpend(card);
+  return auto > 0 ? auto : cleanNumber(card.averageMonthlySpend);
+}
+
 // Project a card's balance month by month under a given payment + spend.
 function projectCardBalance(card, { monthlyPayment, monthlySpend, months }) {
   const rate = catToMonthlyRate(card.catAnnual);
@@ -766,7 +791,7 @@ function projectCardBalance(card, { monthlyPayment, monthlySpend, months }) {
 // Build the five comparison scenarios for a card.
 function projectionScenarios(card) {
   const months = clampInteger(appData.settings.defaultProjectionMonths, 1, 60);
-  const avg = cleanNumber(card.averageMonthlySpend);
+  const avg = effectiveMonthlySpend(card);
   const expected = cleanNumber(card.expectedMonthlyPayment) || cleanNumber(card.minimumPayment);
   const aggressive = Math.max(expected * 2, noInterestTarget(card) * 1.5, cleanNumber(card.currentBalance) / 6);
   return [
@@ -1057,6 +1082,7 @@ function cardCardHtml(c) {
         <div class="detail-item"><div class="detail-label">CAT (annual)</div><div class="detail-value">${fmtPct(c.catAnnual)}</div></div>
         <div class="detail-item"><div class="detail-label">Statement day</div><div class="detail-value">${c.statementDay}</div></div>
         <div class="detail-item"><div class="detail-label">Due date</div><div class="detail-value">${formatDate(dueDate)}</div></div>
+        <div class="detail-item"><div class="detail-label">Avg. spend / mo${c.autoAverageSpend !== false ? " <span class=\"muted small\">(auto)</span>" : ""}</div><div class="detail-value">${fmtMoney(effectiveMonthlySpend(c))}</div></div>
       </div>
       <div style="margin-top:12px">
         <div class="bar-row__label"><span>Utilization</span><em>${util === null ? "—" : fmtPct(util)}</em></div>
@@ -1571,7 +1597,14 @@ function openCardModal(existing) {
         <label>Statement day<input id="cf-statement" inputmode="numeric" value="${c.statementDay ?? 1}"></label>
         <label>Due day<input id="cf-due" inputmode="numeric" value="${c.dueDay ?? 20}"></label>
         <label>CAT % (annual)<input id="cf-cat" inputmode="decimal" value="${c.catAnnual ?? ""}"></label>
-        <label>Avg. monthly spend<input id="cf-avg" inputmode="decimal" value="${c.averageMonthlySpend ?? ""}"></label>
+        <label>Avg. monthly spend
+          <input id="cf-avg" inputmode="decimal" value="${c.averageMonthlySpend ?? ""}" ${c.autoAverageSpend !== false ? "disabled" : ""}>
+          <span class="auto-toggle" style="display:flex;align-items:center;gap:7px;font-weight:400;font-size:0.82rem;color:var(--ink-2)">
+            <input type="checkbox" id="cf-avg-auto" style="width:auto;min-height:0" ${c.autoAverageSpend !== false ? "checked" : ""}>
+            Auto · last 30.4 days
+          </span>
+          <small class="muted small" id="cf-avg-hint" style="font-weight:400"></small>
+        </label>
         <label>Expected monthly payment<input id="cf-expected" inputmode="decimal" value="${c.expectedMonthlyPayment ?? ""}"></label>
         <label>Priority<select id="cf-priority">${optionList(PRIORITIES, c.priority)}</select></label>
       </div>
@@ -1579,6 +1612,21 @@ function openCardModal(existing) {
       <p class="muted small">Available credit is calculated automatically (limit − balance).</p>
       <button type="submit" class="primary-button btn-block">${existing ? "Save card" : "Add card"}</button>
     </form>`);
+
+  // Live auto-average wiring: disable the manual field when auto is on and
+  // preview the value computed from the last 30.4 days of card purchases.
+  const autoVal = existing ? computeAutoAverageMonthlySpend(existing) : 0;
+  function refreshAvgHint() {
+    const on = el("cf-avg-auto").checked;
+    el("cf-avg").disabled = on;
+    el("cf-avg-hint").textContent = on
+      ? (autoVal > 0
+          ? `Auto: ${fmtMoney(autoVal)} from purchases in the last 30.4 days.`
+          : "No card purchases in the last 30.4 days yet — manual value used as fallback.")
+      : "Manual value used for projections.";
+  }
+  el("cf-avg-auto").addEventListener("change", refreshAvgHint);
+  refreshAvgHint();
 
   el("card-form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -1591,7 +1639,8 @@ function openCardModal(existing) {
       currentBalance: el("cf-balance").value, minimumPayment: el("cf-min").value,
       noInterestPayment: el("cf-noint").value, statementDay: el("cf-statement").value,
       dueDay: el("cf-due").value, catAnnual: el("cf-cat").value,
-      averageMonthlySpend: el("cf-avg").value, expectedMonthlyPayment: el("cf-expected").value,
+      averageMonthlySpend: el("cf-avg").value, autoAverageSpend: el("cf-avg-auto").checked,
+      expectedMonthlyPayment: el("cf-expected").value,
       priority: el("cf-priority").value, notes: el("cf-notes").value,
       isActive: existing ? existing.isActive : true,
       createdAt: existing ? existing.createdAt : now, updatedAt: now
