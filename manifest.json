@@ -1,7 +1,7 @@
 {
-  "name": "Javi's Finance Hub",
-  "short_name": "Finance Hub",
-  "description": "Local-first personal finance, debt, and credit card command center with a cozy paper ledger feel.",
+  "name": "Hub Financiero de Javi",
+  "short_name": "Hub Financiero",
+  "description": "Centro personal de finanzas, deudas y tarjetas de credito que guarda los datos localmente.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
@@ -9,7 +9,7 @@
   "theme_color": "#efe3cc",
   "orientation": "portrait-primary",
   "categories": ["finance", "productivity"],
-  "lang": "en",
+  "lang": "es",
   "dir": "ltr",
   "icons": [
     {
@@ -32,3 +32,4 @@
     }
   ]
 }
+

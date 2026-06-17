@@ -34,10 +34,10 @@ const THEME_PREFERENCES = ["system", "light", "dark"];
 const THEME_COLORS = { light: "#efe3cc", dark: "#1a100b" };
 
 const DEFAULT_EXPENSE_CATEGORIES = [
-  "Food", "Fuel", "Gym", "Subscriptions", "Car", "Health",
-  "Entertainment", "Family", "Work", "Learning", "Debt Payments", "Other"
+  "Comida", "Gasolina", "Gym", "Suscripciones", "Auto", "Salud",
+  "Entretenimiento", "Familia", "Trabajo", "Aprendizaje", "Pagos de deuda", "Otro"
 ];
-const DEFAULT_INCOME_CATEGORIES = ["Salary", "Extra income", "Refund", "Other"];
+const DEFAULT_INCOME_CATEGORIES = ["Salario", "Ingreso extra", "Reembolso", "Otro"];
 
 const PAYMENT_METHODS = ["cash", "debit", "credit_card"];
 const TXN_TYPES = ["income", "expense", "debt_payment", "credit_card_payment", "subscription", "adjustment"];
@@ -51,8 +51,8 @@ function defaultData() {
       currency: "MXN",
       currencySymbol: "$",
       payFrequency: "biweekly",        // "biweekly" | "monthly"
-      monthlyIncome: 18500,
-      biweeklyIncome: 9250,
+      monthlyIncome: 28250,
+      biweeklyIncome: 14125,
       theme: "system",
       savingsGoalPercent: 10,
       spendingLimitPercent: 80,
@@ -69,8 +69,8 @@ function defaultData() {
     debts: [],
     subscriptions: [],
     budgets: [
-      budgetSeed("Monthly spending", "", 14800, "general", 80),
-      budgetSeed("Savings target", "__savings__", 1850, "savings", 100)
+      budgetSeed("Gasto mensual", "", 14800, "general", 80),
+      budgetSeed("Meta de ahorro", "__savings__", 2825, "savings", 100)
     ],
     purchaseDecisions: [],
     monthlyReports: [],
@@ -105,7 +105,7 @@ function loadData() {
     if (!raw) return defaultData();
     return normalizeData(JSON.parse(raw));
   } catch (err) {
-    console.error("Load failed, starting fresh.", err);
+    console.error("No se pudo cargar; iniciando de nuevo.", err);
     return defaultData();
   }
 }
@@ -114,7 +114,7 @@ function saveData() {
   appData.metadata = appData.metadata || {};
   appData.metadata.updatedAt = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-  showStorageStatus("Saved locally");
+  showStorageStatus("Guardado localmente");
 }
 
 function resetData() {
@@ -223,7 +223,7 @@ function showStorageStatus(message, isError = false) {
   els.storageStatus.style.color = isError ? "var(--danger)" : "";
   clearTimeout(showStorageStatus._t);
   showStorageStatus._t = setTimeout(() => {
-    els.storageStatus.textContent = "Saved locally";
+    els.storageStatus.textContent = "Guardado localmente";
     els.storageStatus.style.color = "";
   }, 2600);
 }
@@ -254,12 +254,12 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 function monthKey(d) { return d.toISOString().slice(0, 7); }
 function monthLabel(key) {
   const [y, m] = key.split("-").map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  return new Date(y, m - 1, 1).toLocaleDateString("es-MX", { month: "long", year: "numeric" });
 }
 function inMonth(isoDate, key) { return typeof isoDate === "string" && isoDate.slice(0, 7) === key; }
 function formatDate(date) {
   const d = date instanceof Date ? date : new Date(date);
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(d);
+  return new Intl.DateTimeFormat("es-MX", { month: "short", day: "numeric", year: "numeric" }).format(d);
 }
 function startOfLocalDay(date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
 function createClampedDate(year, monthIndex, day) {
@@ -276,8 +276,8 @@ function daysElapsedInMonth(key) {
 // Cadence (monthly vs biweekly / quincenal) — mirrors PagoClaro behavior.
 function isBiweekly() { return appData.settings.payFrequency === "biweekly"; }
 function periodsPerMonth() { return isBiweekly() ? 2 : 1; }
-function periodNoun() { return isBiweekly() ? "quincena" : "month"; }
-function periodAdjective() { return isBiweekly() ? "This Quincena" : "This Month"; }
+function periodNoun() { return isBiweekly() ? "quincena" : "mes"; }
+function periodAdjective() { return isBiweekly() ? "Esta quincena" : "Este mes"; }
 function toPeriod(monthlyAmount) { return cleanNumber(monthlyAmount) / periodsPerMonth(); }
 
 function getMonthlyIncome() {
@@ -447,8 +447,8 @@ function buildObligations() {
     const dueDate = getCardNextDueDate(c);
     out.push({
       kind: "card", ref: c, id: c.id,
-      title: c.bank || c.name || "Card",
-      subtitle: c.name || "Credit card",
+      title: c.bank || c.name || "Tarjeta",
+      subtitle: c.name || "Tarjeta de credito",
       dueDate, daysUntilDue: getDaysUntil(dueDate),
       minimum: cleanNumber(c.minimumPayment),
       noInterest: noInterestTarget(c),
@@ -460,8 +460,8 @@ function buildObligations() {
     const dueDate = d.dueDate ? new Date(d.dueDate + "T00:00:00") : null;
     out.push({
       kind: "debt", ref: d, id: d.id,
-      title: d.name || "Debt",
-      subtitle: d.institution || "Non-card debt",
+      title: d.name || "Deuda",
+      subtitle: d.institution || "Deuda sin tarjeta",
       dueDate, daysUntilDue: dueDate ? getDaysUntil(dueDate) : Infinity,
       minimum: cleanNumber(d.minimumPayment),
       noInterest: noInterestTarget(d),
@@ -475,13 +475,13 @@ function buildObligations() {
 function obligationStatus(ob) {
   const warningDays = cleanNumber(appData.settings.warningDays);
   const dangerDays = cleanNumber(appData.settings.dangerDays);
-  if (ob.priority === "critical") return { label: "Critical", level: "critical" };
+  if (ob.priority === "critical") return { label: "Critico", level: "critical" };
   const days = ob.daysUntilDue;
-  if (!Number.isFinite(days)) return { label: "No date", level: "neutral" };
-  if (days < 0) return { label: "Overdue", level: "danger" };
-  if (days <= dangerDays) return { label: "Urgent", level: "danger" };
-  if (days <= warningDays) return { label: "Warning", level: "warning" };
-  return { label: "Safe", level: "safe" };
+  if (!Number.isFinite(days)) return { label: "Sin fecha", level: "neutral" };
+  if (days < 0) return { label: "Vencido", level: "danger" };
+  if (days <= dangerDays) return { label: "Urgente", level: "danger" };
+  if (days <= warningDays) return { label: "Advertencia", level: "warning" };
+  return { label: "Seguro", level: "safe" };
 }
 
 function sortObligationsByUrgency(list) {
@@ -599,7 +599,7 @@ function buildTransaction(input, existing) {
     id: existing ? existing.id : createId("tx"),
     type,
     amount: Math.max(0, cleanNumber(input.amount)),
-    category: input.category || "Other",
+    category: input.category || "Otro",
     date: input.date || todayISO(),
     description: (input.description || "").trim(),
     essential: input.necessity === "essential",
@@ -686,10 +686,10 @@ function allocatePayments(obligations, availableForDebt) {
 }
 
 function rowStatus(r) {
-  if (r.unpaidMinimum > 0 && r.recommended <= 0) return { label: "Not covered", level: "danger" };
-  if (r.unpaidMinimum > 0) return { label: "At risk", level: "warning" };
-  if (r.unpaidNoInterest > 0) return { label: "Partially covered", level: "warning" };
-  return { label: "Covered", level: "safe" };
+  if (r.unpaidMinimum > 0 && r.recommended <= 0) return { label: "No cubierto", level: "danger" };
+  if (r.unpaidMinimum > 0) return { label: "En riesgo", level: "warning" };
+  if (r.unpaidNoInterest > 0) return { label: "Parcialmente cubierto", level: "warning" };
+  return { label: "Cubierto", level: "safe" };
 }
 
 function generatePaymentPlan({ available, extra, essential, savings }) {
@@ -795,11 +795,11 @@ function projectionScenarios(card) {
   const expected = cleanNumber(card.expectedMonthlyPayment) || cleanNumber(card.minimumPayment);
   const aggressive = Math.max(expected * 2, noInterestTarget(card) * 1.5, cleanNumber(card.currentBalance) / 6);
   return [
-    { key: "minimum", label: "Minimum", color: "var(--danger)", ...projectCardBalance(card, { monthlyPayment: card.minimumPayment, monthlySpend: avg, months }) },
-    { key: "nointerest", label: "No-interest", color: "var(--warn)", ...projectCardBalance(card, { monthlyPayment: noInterestTarget(card), monthlySpend: avg, months }) },
-    { key: "expected", label: "Expected", color: "var(--clay)", ...projectCardBalance(card, { monthlyPayment: expected, monthlySpend: avg, months }) },
-    { key: "aggressive", label: "Aggressive", color: "var(--sage)", ...projectCardBalance(card, { monthlyPayment: aggressive, monthlySpend: 0, months }) },
-    { key: "spending", label: "Keep spending", color: "var(--info)", ...projectCardBalance(card, { monthlyPayment: card.minimumPayment, monthlySpend: avg * 1.5, months }) }
+    { key: "minimum", label: "Minimo", color: "var(--danger)", ...projectCardBalance(card, { monthlyPayment: card.minimumPayment, monthlySpend: avg, months }) },
+    { key: "nointerest", label: "Sin intereses", color: "var(--warn)", ...projectCardBalance(card, { monthlyPayment: noInterestTarget(card), monthlySpend: avg, months }) },
+    { key: "expected", label: "Esperado", color: "var(--clay)", ...projectCardBalance(card, { monthlyPayment: expected, monthlySpend: avg, months }) },
+    { key: "aggressive", label: "Agresivo", color: "var(--sage)", ...projectCardBalance(card, { monthlyPayment: aggressive, monthlySpend: 0, months }) },
+    { key: "spending", label: "Seguir gastando", color: "var(--info)", ...projectCardBalance(card, { monthlyPayment: card.minimumPayment, monthlySpend: avg * 1.5, months }) }
   ];
 }
 
@@ -827,34 +827,34 @@ function evaluatePurchaseDecision(input) {
 
   // Order matters — first match wins.
   if (optional && input.freeAlt) {
-    return { verdict: "Do not buy", cls: "danger", reason: "There is a free alternative and this is optional." };
+    return { verdict: "No comprar", cls: "danger", reason: "Hay una alternativa gratis y esto es opcional." };
   }
   if (optional && (debtPressureHigh || highUtil)) {
-    return { verdict: "Do not buy", cls: "danger",
-      reason: highUtil ? "Credit utilization is high and this purchase is optional." : "Upcoming debt payments are at risk and this purchase is optional." };
+    return { verdict: "No comprar", cls: "danger",
+      reason: highUtil ? "La utilizacion de credito es alta y esta compra es opcional." : "Los proximos pagos de deuda estan en riesgo y esta compra es opcional." };
   }
   if (optional && input.canWait) {
-    return { verdict: "Wait 7 days", cls: "warning", reason: "It can wait — give it 7 days and re-evaluate." };
+    return { verdict: "Esperar 7 dias", cls: "warning", reason: "Puede esperar: dale 7 dias y vuelve a evaluarlo." };
   }
   if (cost > remaining) {
-    return { verdict: "Do not buy", cls: "danger", reason: `Cost exceeds your remaining budget (${fmtMoney(remaining)} left).` };
+    return { verdict: "No comprar", cls: "danger", reason: `El costo supera tu presupuesto restante (quedan ${fmtMoney(remaining)}).` };
   }
   if (conservative && optional && !savingsMet) {
-    return { verdict: "Wait 7 days", cls: "warning", reason: "Savings goal isn't met yet and this is optional. Wait 7 days." };
+    return { verdict: "Esperar 7 dias", cls: "warning", reason: "Savings goal isn't met yet and this is optional. Wait 7 days." };
   }
   if (input.need === "essential" || input.supports) {
-    return { verdict: "Buy", cls: "safe", reason: input.supports ? "Supports health, work, or family and fits your budget." : "Marked essential and within budget." };
+    return { verdict: "Comprar", cls: "safe", reason: input.supports ? "Apoya salud, trabajo o familia y cabe en tu presupuesto." : "Marcado como esencial y dentro del presupuesto." };
   }
-  return { verdict: "Buy", cls: "safe", reason: "Fits within your remaining budget." };
+  return { verdict: "Comprar", cls: "safe", reason: "Cabe dentro de tu presupuesto restante." };
 }
 
 /* ===========================================================================
    12. RENDERING
    =========================================================================== */
 const SECTION_TITLES = {
-  dashboard: "Dashboard", transactions: "Transactions", cards: "Credit Cards & Debts",
-  planner: "Payment Planner", simulator: "Scenario Simulator", subscriptions: "Subscriptions",
-  decision: "Purchase Decision", budgets: "Budgets", reports: "Reports", settings: "Settings", more: "More"
+  dashboard: "Panel", transactions: "Transacciones", cards: "Tarjetas de credito y deudas",
+  planner: "Planificador de pagos", simulator: "Simulador de escenarios", subscriptions: "Suscripciones",
+  decision: "Decision de compra", budgets: "Presupuestos", reports: "Reportes", settings: "Configuracion", more: "Mas"
 };
 const MONTH_SECTIONS = ["dashboard", "transactions", "budgets", "reports"];
 
@@ -2357,3 +2357,4 @@ function init() {
   registerServiceWorker();
 }
 document.addEventListener("DOMContentLoaded", init);
+

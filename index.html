@@ -1,21 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#efe3cc" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#1a100b" media="(prefers-color-scheme: dark)">
-    <meta name="description" content="Javi's Finance Hub — a local-first personal finance, debt, and credit card command center with a cozy paper ledger feel.">
+    <meta name="description" content="Hub Financiero de Javi: centro personal de finanzas, deudas y tarjetas de credito que guarda los datos localmente.">
 
     <!-- iOS / iPhone PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Finance Hub">
+    <meta name="apple-mobile-web-app-title" content="Hub Financiero">
     <meta name="format-detection" content="telephone=no">
 
-    <title>Javi's Finance Hub</title>
+    <title>Hub Financiero de Javi</title>
 
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -26,55 +26,55 @@
   <body>
     <div class="app-shell">
       <!-- ================= SIDEBAR (desktop) ================= -->
-      <aside class="sidebar" aria-label="Primary navigation">
+      <aside class="sidebar" aria-label="Navegacion principal">
         <div class="brand-block">
           <div class="brand-mark" aria-hidden="true">JF</div>
           <div>
-            <h1>Finance Hub</h1>
-            <p class="muted">Money clarity. Debt discipline.</p>
+            <h1>Hub Financiero</h1>
+            <p class="muted">Claridad financiera. Disciplina con deudas.</p>
           </div>
         </div>
 
         <nav class="nav-list" id="sidebar-nav">
           <button class="nav-button active" type="button" data-section="dashboard">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
-            <span>Dashboard</span>
+            <span>Panel</span>
           </button>
           <button class="nav-button" type="button" data-section="transactions">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-            <span>Transactions</span>
+            <span>Transacciones</span>
           </button>
           <button class="nav-button" type="button" data-section="cards">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 9.5h19M6 14.5h4"/></svg>
-            <span>Cards &amp; Debts</span>
+            <span>Tarjetas y deudas</span>
           </button>
           <button class="nav-button" type="button" data-section="planner">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4h6v3H9zM8.5 12h7M8.5 16h4.5"/></svg>
-            <span>Payment Planner</span>
+            <span>Planificador de pagos</span>
           </button>
           <button class="nav-button" type="button" data-section="simulator">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h8M18.5 7H20M4 12h1.5M11.5 12H20M4 17h5.5M15.5 17H20"/><circle cx="15" cy="7" r="2.3"/><circle cx="8" cy="12" r="2.3"/><circle cx="12.5" cy="17" r="2.3"/></svg>
-            <span>Scenario Simulator</span>
+            <span>Simulador de escenarios</span>
           </button>
           <button class="nav-button" type="button" data-section="subscriptions">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8M20 4v4h-4M20 12a8 8 0 0 1-13.7 5.6L4 16M4 20v-4h4"/></svg>
-            <span>Subscriptions</span>
+            <span>Suscripciones</span>
           </button>
           <button class="nav-button" type="button" data-section="decision">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.4 1c0 1.8-2.6 2.2-2.6 4M12 17.5h.01"/></svg>
-            <span>Purchase Decision</span>
+            <span>Decision de compra</span>
           </button>
           <button class="nav-button" type="button" data-section="budgets">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9h-9z"/></svg>
-            <span>Budgets</span>
+            <span>Presupuestos</span>
           </button>
           <button class="nav-button" type="button" data-section="reports">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-            <span>Reports</span>
+            <span>Reportes</span>
           </button>
           <button class="nav-button" type="button" data-section="settings">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5 5l1.8 1.8M17.2 17.2L19 19M19 5l-1.8 1.8M6.8 17.2L5 19"/></svg>
-            <span>Settings</span>
+            <span>Configuracion</span>
           </button>
         </nav>
       </aside>
@@ -83,16 +83,16 @@
       <main class="main-content">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Local-first PWA</p>
-            <h2 id="section-title">Dashboard</h2>
+            <p class="eyebrow">PWA local primero</p>
+            <h2 id="section-title">Panel</h2>
           </div>
           <div class="topbar-tools">
             <div class="month-switch" id="month-switch">
-              <button class="icon-btn" type="button" id="prev-month" aria-label="Previous month">‹</button>
+              <button class="icon-btn" type="button" id="prev-month" aria-label="Mes anterior">‹</button>
               <span id="current-month-label">—</span>
-              <button class="icon-btn" type="button" id="next-month" aria-label="Next month">›</button>
+              <button class="icon-btn" type="button" id="next-month" aria-label="Mes siguiente">›</button>
             </div>
-            <div class="sync-state" id="storage-status" aria-live="polite">Saved locally</div>
+            <div class="sync-state" id="storage-status" aria-live="polite">Guardado localmente</div>
           </div>
         </header>
 
@@ -100,22 +100,22 @@
         <section class="section active" id="dashboard">
           <div class="ios-hint" id="ios-install-hint">
             <svg class="share-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>
-            <span>Install Finance Hub: tap <strong>Share</strong>, then <strong>Add to Home Screen</strong> for a full-screen app.</span>
-            <button type="button" id="ios-hint-dismiss" aria-label="Dismiss">&times;</button>
+            <span>Instala Hub Financiero: toca <strong>Compartir</strong> y luego <strong>Agregar a pantalla de inicio</strong> para usarla en pantalla completa.</span>
+            <button type="button" id="ios-hint-dismiss" aria-label="Cerrar">&times;</button>
           </div>
 
           <div class="section-head">
             <div>
-              <h3>Monthly Control</h3>
-              <p>Your money, debt pressure, and what this period can realistically cover.</p>
+              <h3>Control mensual</h3>
+              <p>Tu dinero, la presion de deudas y lo que este periodo puede cubrir de forma realista.</p>
             </div>
           </div>
 
           <form class="compact-form" id="dashboard-money-form">
-            <label for="dashboard-available">Available money this period</label>
+            <label for="dashboard-available">Dinero disponible este periodo</label>
             <div class="inline-field">
               <input id="dashboard-available" inputmode="decimal" autocomplete="off">
-              <button type="submit" class="primary-button">Apply</button>
+              <button type="submit" class="primary-button">Aplicar</button>
             </div>
           </form>
 
@@ -127,49 +127,49 @@
 
           <div class="table-panel">
             <div class="panel-head">
-              <h3>Progress</h3>
-              <p>How this month tracks against income, budget, and goals.</p>
+              <h3>Progreso</h3>
+              <p>Como va este mes frente a ingresos, presupuesto y metas.</p>
             </div>
             <div class="bar-group" id="dashboard-bars"></div>
           </div>
 
           <div class="table-panel">
             <div class="panel-head">
-              <h3>Cards &amp; Debts By Urgency</h3>
-              <p>Nearest due dates first.</p>
+              <h3>Tarjetas y deudas By Urgency</h3>
+              <p>Fechas de vencimiento mas cercanas primero.</p>
             </div>
             <div id="dashboard-debt-list" class="debt-list"></div>
           </div>
 
           <div class="form-panel">
             <div class="form-title-row">
-              <h3>Quick Add Expense</h3>
+              <h3>Agregar gasto rapido</h3>
             </div>
             <form id="quick-add-form" class="form-grid three">
-              <label>Amount
+              <label>Monto
                 <input id="qa-amount" inputmode="decimal" placeholder="0.00" required>
               </label>
-              <label>Category
+              <label>Categoria
                 <select id="qa-category"></select>
               </label>
-              <label>Payment method
+              <label>Metodo de pago
                 <select id="qa-payment">
-                  <option value="cash">Cash</option>
-                  <option value="debit" selected>Debit</option>
-                  <option value="credit_card">Credit card</option>
+                  <option value="cash">Efectivo</option>
+                  <option value="debit" selected>Debito</option>
+                  <option value="credit_card">Tarjeta de credito</option>
                 </select>
               </label>
-              <label class="qa-card-field hidden" id="qa-card-wrap">Credit card
+              <label class="qa-card-field hidden" id="qa-card-wrap">Tarjeta de credito
                 <select id="qa-card"></select>
               </label>
-              <label>Description
-                <input id="qa-description" placeholder="e.g. Lunch">
+              <label>Descripcion
+                <input id="qa-description" placeholder="ej. Comida">
               </label>
-              <label>Date
+              <label>Fecha
                 <input id="qa-date" type="date" required>
               </label>
               <div class="form-actions" style="grid-column:1/-1">
-                <button type="submit" class="primary-button">Add expense</button>
+                <button type="submit" class="primary-button">Agregar gasto</button>
               </div>
             </form>
           </div>
@@ -179,54 +179,54 @@
         <section class="section" id="transactions">
           <div class="section-head">
             <div>
-              <h3>Transactions</h3>
-              <p>Every income and expense for the selected month.</p>
+              <h3>Transacciones</h3>
+              <p>Todos los ingresos y gastos del mes seleccionado.</p>
             </div>
-            <button class="primary-button" type="button" id="add-txn-btn">+ Add transaction</button>
+            <button class="primary-button" type="button" id="add-txn-btn">+ Agregar transaccion</button>
           </div>
 
           <div class="form-panel">
             <div class="form-grid">
-              <label>Search
-                <input type="search" id="txn-search" placeholder="Description…">
+              <label>Buscar
+                <input type="search" id="txn-search" placeholder="Descripcion…">
               </label>
-              <label>Category
-                <select id="txn-filter-category"><option value="">All</option></select>
+              <label>Categoria
+                <select id="txn-filter-category"><option value="">Todo</option></select>
               </label>
-              <label>Type
+              <label>Tipo
                 <select id="txn-filter-type">
-                  <option value="">All</option>
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                  <option value="credit_card_payment">Card payment</option>
-                  <option value="debt_payment">Debt payment</option>
-                  <option value="subscription">Subscription</option>
-                  <option value="adjustment">Adjustment</option>
+                  <option value="">Todo</option>
+                  <option value="income">Ingreso</option>
+                  <option value="expense">Gasto</option>
+                  <option value="credit_card_payment">Pago de tarjeta</option>
+                  <option value="debt_payment">Pago de deuda</option>
+                  <option value="subscription">Suscripcion</option>
+                  <option value="adjustment">Ajuste</option>
                 </select>
               </label>
-              <label>Payment method
+              <label>Metodo de pago
                 <select id="txn-filter-method">
-                  <option value="">All</option>
-                  <option value="cash">Cash</option>
-                  <option value="debit">Debit</option>
-                  <option value="credit_card">Credit card</option>
+                  <option value="">Todo</option>
+                  <option value="cash">Efectivo</option>
+                  <option value="debit">Debito</option>
+                  <option value="credit_card">Tarjeta de credito</option>
                 </select>
               </label>
-              <label>Sort
+              <label>Ordenar
                 <select id="txn-sort">
-                  <option value="date-desc">Date ↓</option>
-                  <option value="date-asc">Date ↑</option>
-                  <option value="amount-desc">Amount ↓</option>
-                  <option value="amount-asc">Amount ↑</option>
+                  <option value="date-desc">Fecha ↓</option>
+                  <option value="date-asc">Fecha ↑</option>
+                  <option value="amount-desc">Monto ↓</option>
+                  <option value="amount-asc">Monto ↑</option>
                 </select>
               </label>
             </div>
             <div class="settings-actions">
-              <button class="secondary-button" type="button" id="export-txn-csv">Export CSV</button>
-              <label class="file-button">Import CSV
+              <button class="secondary-button" type="button" id="export-txn-csv">Exportar CSV</button>
+              <label class="file-button">Importar CSV
                 <input type="file" id="import-txn-csv" accept=".csv,text/csv">
               </label>
-              <button class="secondary-button" type="button" id="download-csv-template">CSV template</button>
+              <button class="secondary-button" type="button" id="download-csv-template">Plantilla CSV</button>
             </div>
           </div>
 
@@ -237,26 +237,26 @@
         <section class="section" id="cards">
           <div class="section-head">
             <div>
-              <h3>Credit Cards &amp; Debts</h3>
-              <p>Card balances, available credit, ledgers, projections, and non-card debts.</p>
+              <h3>Credit Tarjetas y deudas</h3>
+              <p>Saldos de tarjetas, credito disponible, movimientos, proyecciones y deudas sin tarjeta.</p>
             </div>
             <label class="toggle-row">
               <input type="checkbox" id="show-inactive">
-              <span>Show inactive</span>
+              <span>Mostrar inactivas</span>
             </label>
           </div>
 
           <div class="summary-grid" id="cards-summary"></div>
 
           <div class="panel-head">
-            <h3>Credit Cards</h3>
-            <button class="primary-button" type="button" id="add-card-btn">+ Add card</button>
+            <h3>Tarjetas de credito</h3>
+            <button class="primary-button" type="button" id="add-card-btn">+ Agregar tarjeta</button>
           </div>
           <div class="debt-list" id="card-list"></div>
 
           <div class="panel-head" style="margin-top:24px">
-            <h3>Non-Card Debts</h3>
-            <button class="primary-button" type="button" id="add-debt-btn">+ Add debt</button>
+            <h3>Deudas sin tarjeta</h3>
+            <button class="primary-button" type="button" id="add-debt-btn">+ Agregar deuda</button>
           </div>
           <div class="debt-list" id="debt-list"></div>
         </section>
@@ -265,27 +265,27 @@
         <section class="section" id="planner">
           <div class="section-head">
             <div>
-              <h3>Payment Planner</h3>
-              <p>Decide what this payment cycle can realistically cover, in priority order.</p>
+              <h3>Planificador de pagos</h3>
+              <p>Decide lo que este ciclo de pago puede cubrir de forma realista, en orden de prioridad.</p>
             </div>
           </div>
 
           <form class="form-panel" id="planner-form">
             <div class="form-grid">
-              <label>Available money
+              <label>Dinero disponible
                 <input id="planner-available" inputmode="decimal" autocomplete="off">
               </label>
-              <label>Expected extra income
+              <label>Ingreso extra esperado
                 <input id="planner-extra" inputmode="decimal" autocomplete="off" value="0">
               </label>
-              <label>Essential expenses first
+              <label>Gastos esenciales primero
                 <input id="planner-expenses" inputmode="decimal" autocomplete="off" value="0">
               </label>
-              <label>Planned savings
+              <label>Ahorro planeado
                 <input id="planner-savings" inputmode="decimal" autocomplete="off" value="0">
               </label>
             </div>
-            <button class="primary-button" type="submit">Calculate plan</button>
+            <button class="primary-button" type="submit">Calcular plan</button>
           </form>
 
           <div id="planner-output"></div>
@@ -295,42 +295,42 @@
         <section class="section" id="simulator">
           <div class="section-head">
             <div>
-              <h3>Scenario Simulator</h3>
-              <p>Test payment strategies and spending assumptions before committing.</p>
+              <h3>Simulador de escenarios</h3>
+              <p>Prueba estrategias de pago y supuestos de gasto antes de comprometerte.</p>
             </div>
           </div>
 
           <form class="form-panel" id="scenario-form">
             <div class="form-grid three">
-              <label>Available money
+              <label>Dinero disponible
                 <input id="sim-available" inputmode="decimal" autocomplete="off">
               </label>
-              <label>Extra income
+              <label>Ingreso extra
                 <input id="sim-extra" inputmode="decimal" autocomplete="off" value="0">
               </label>
-              <label>Essential expenses
+              <label>Gastos esenciales
                 <input id="sim-essential" inputmode="decimal" autocomplete="off" value="0">
               </label>
-              <label>Optional expenses
+              <label>Gastos opcionales
                 <input id="sim-optional" inputmode="decimal" autocomplete="off" value="0">
               </label>
-              <label>Savings target
+              <label>Meta de ahorro
                 <input id="sim-savings" inputmode="decimal" autocomplete="off" value="0">
               </label>
-              <label>Payment strategy
+              <label>Estrategia de pago
                 <select id="sim-strategy">
-                  <option value="conservative">Conservative (minimums only)</option>
-                  <option value="balanced" selected>Balanced (min + no-interest)</option>
-                  <option value="aggressive">Aggressive (all surplus to debt)</option>
-                  <option value="savings_first">Savings-first</option>
-                  <option value="custom">Custom budget</option>
+                  <option value="conservative">Conservadora (solo minimos)</option>
+                  <option value="balanced" selected>Balanceada (minimo + sin intereses)</option>
+                  <option value="aggressive">Agresiva (todo el excedente a deuda)</option>
+                  <option value="savings_first">Ahorro primero</option>
+                  <option value="custom">Presupuesto personalizado</option>
                 </select>
               </label>
-              <label id="sim-custom-wrap" class="hidden">Custom debt budget
+              <label id="sim-custom-wrap" class="hidden">Presupuesto de deuda personalizado
                 <input id="sim-custom-budget" inputmode="decimal" autocomplete="off" value="0">
               </label>
             </div>
-            <button class="primary-button" type="submit">Run scenario</button>
+            <button class="primary-button" type="submit">Ejecutar escenario</button>
           </form>
 
           <div id="scenario-output"></div>
@@ -340,10 +340,10 @@
         <section class="section" id="subscriptions">
           <div class="section-head">
             <div>
-              <h3>Subscriptions</h3>
-              <p>Recurring costs, their monthly impact, and what to review.</p>
+              <h3>Suscripciones</h3>
+              <p>Costos recurrentes, su impacto mensual y que revisar.</p>
             </div>
-            <button class="primary-button" type="button" id="add-sub-btn">+ Add subscription</button>
+            <button class="primary-button" type="button" id="add-sub-btn">+ Agregar suscripcion</button>
           </div>
 
           <div class="summary-grid" id="sub-summary"></div>
@@ -357,8 +357,8 @@
         <section class="section" id="decision">
           <div class="section-head">
             <div>
-              <h3>Purchase Decision</h3>
-              <p>A disciplined, conservative "should I buy this?" check.</p>
+              <h3>Decision de compra</h3>
+              <p>Una revision disciplinada y conservadora para decidir si conviene comprar.</p>
             </div>
           </div>
 
@@ -366,37 +366,37 @@
 
           <form class="form-panel" id="decision-form">
             <div class="form-grid">
-              <label>Item name
-                <input id="dec-name" required placeholder="e.g. Headphones">
+              <label>Nombre del articulo
+                <input id="dec-name" required placeholder="ej. Audifonos">
               </label>
-              <label>Price
+              <label>Precio
                 <input id="dec-cost" inputmode="decimal" required placeholder="0.00">
               </label>
-              <label>Category
+              <label>Categoria
                 <select id="dec-category"></select>
               </label>
-              <label>Need level
+              <label>Nivel de necesidad
                 <select id="dec-need">
-                  <option value="essential">Essential</option>
-                  <option value="useful" selected>Useful</option>
-                  <option value="optional">Optional / want</option>
+                  <option value="essential">Esencial</option>
+                  <option value="useful" selected>Util</option>
+                  <option value="optional">Opcional / deseo</option>
                 </select>
               </label>
             </div>
             <div class="check-grid">
-              <label class="toggle-row"><input type="checkbox" id="dec-supports"> Supports health / work / family</label>
-              <label class="toggle-row"><input type="checkbox" id="dec-can-wait"> Can it wait 7 days?</label>
-              <label class="toggle-row"><input type="checkbox" id="dec-free-alt"> Is there a free alternative?</label>
+              <label class="toggle-row"><input type="checkbox" id="dec-supports"> Apoya salud / trabajo / familia</label>
+              <label class="toggle-row"><input type="checkbox" id="dec-can-wait"> Puede esperar 7 dias?</label>
+              <label class="toggle-row"><input type="checkbox" id="dec-free-alt"> Hay una alternativa gratis?</label>
             </div>
-            <label>Notes
-              <textarea id="dec-notes" rows="2" placeholder="Optional"></textarea>
+            <label>Notas
+              <textarea id="dec-notes" rows="2" placeholder="Opcional"></textarea>
             </label>
-            <button type="submit" class="primary-button">Evaluate</button>
+            <button type="submit" class="primary-button">Evaluar</button>
           </form>
 
           <div id="decision-result" class="status-panel hidden"></div>
 
-          <div class="panel-head" style="margin-top:20px"><h3>History</h3></div>
+          <div class="panel-head" style="margin-top:20px"><h3>Historial</h3></div>
           <div id="decision-list" class="list"></div>
         </section>
 
@@ -404,10 +404,10 @@
         <section class="section" id="budgets">
           <div class="section-head">
             <div>
-              <h3>Budgets</h3>
-              <p>Spending limits, savings goals, and progress for this month.</p>
+              <h3>Presupuestos</h3>
+              <p>Limites de gasto, metas de ahorro y progreso de este mes.</p>
             </div>
-            <button class="primary-button" type="button" id="add-budget-btn">+ Add budget</button>
+            <button class="primary-button" type="button" id="add-budget-btn">+ Agregar presupuesto</button>
           </div>
 
           <div id="budget-alerts"></div>
@@ -418,10 +418,10 @@
         <section class="section" id="reports">
           <div class="section-head">
             <div>
-              <h3>Reports</h3>
-              <p>Monthly performance across spending, savings, and debt.</p>
+              <h3>Reportes</h3>
+              <p>Desempeno mensual en gasto, ahorro y deuda.</p>
             </div>
-            <button class="secondary-button" type="button" id="export-report-csv">Export CSV</button>
+            <button class="secondary-button" type="button" id="export-report-csv">Exportar CSV</button>
           </div>
 
           <div class="status-panel neutral" id="report-summary"></div>
@@ -429,22 +429,22 @@
           <div class="summary-grid" id="report-stats"></div>
 
           <div class="table-panel">
-            <div class="panel-head"><h3>Expenses by category</h3></div>
+            <div class="panel-head"><h3>Gastos by category</h3></div>
             <div id="report-category-chart" class="chart"></div>
           </div>
 
           <div class="table-panel">
-            <div class="panel-head"><h3>Essential vs optional</h3></div>
+            <div class="panel-head"><h3>Esencial vs optional</h3></div>
             <div id="report-necessity-chart" class="chart"></div>
           </div>
 
           <div class="table-panel">
-            <div class="panel-head"><h3>Debt &amp; credit snapshot</h3></div>
+            <div class="panel-head"><h3>Resumen de deuda y credito</h3></div>
             <div id="report-debt" class="chart"></div>
           </div>
 
           <div class="table-panel">
-            <div class="panel-head"><h3>Top 5 expenses</h3></div>
+            <div class="panel-head"><h3>Top 5 gastos</h3></div>
             <div id="report-top" class="list"></div>
           </div>
         </section>
@@ -453,109 +453,109 @@
         <section class="section" id="settings">
           <div class="section-head">
             <div>
-              <h3>Settings</h3>
-              <p>Income, thresholds, theme, categories, backup, and migration.</p>
+              <h3>Configuracion</h3>
+              <p>Ingreso, thresholds, theme, categories, backup, and migration.</p>
             </div>
           </div>
 
           <form class="form-panel" id="settings-form">
-            <div class="form-title-row"><h3>Income &amp; goals</h3></div>
+            <div class="form-title-row"><h3>Ingreso &amp; goals</h3></div>
             <div class="form-grid">
-              <label>Currency code
+              <label>Codigo de moneda
                 <input id="set-currency-code" autocomplete="off">
               </label>
-              <label>Currency symbol
+              <label>Simbolo de moneda
                 <input id="set-currency-symbol" autocomplete="off">
               </label>
-              <label>Monthly income
+              <label>Ingreso mensual
                 <input id="set-monthly-income" inputmode="decimal" autocomplete="off">
               </label>
-              <label>Biweekly (quincena) income
+              <label>Ingreso quincenal
                 <input id="set-biweekly-income" inputmode="decimal" autocomplete="off">
               </label>
-              <label>Payment frequency
+              <label>Frecuencia de pago
                 <select id="set-pay-frequency">
-                  <option value="biweekly">Biweekly (quincenal)</option>
-                  <option value="monthly">Monthly</option>
+                  <option value="biweekly">Quincenal</option>
+                  <option value="monthly">Mensual</option>
                 </select>
               </label>
-              <label>Theme
+              <label>Tema
                 <select id="set-theme">
-                  <option value="system">Follow system</option>
-                  <option value="light">Light paper</option>
-                  <option value="dark">Candlelit paper</option>
+                  <option value="system">Seguir sistema</option>
+                  <option value="light">Papel claro</option>
+                  <option value="dark">Papel nocturno</option>
                 </select>
               </label>
-              <label>Savings goal %
+              <label>Meta de ahorro %
                 <input id="set-savings-pct" inputmode="numeric" autocomplete="off">
               </label>
-              <label>Spending limit %
+              <label>Limite de gasto %
                 <input id="set-spend-pct" inputmode="numeric" autocomplete="off">
               </label>
-              <label>Default monthly budget
+              <label>Presupuesto mensual predeterminado
                 <input id="set-monthly-budget" inputmode="decimal" autocomplete="off">
               </label>
-              <label>Warning threshold (days)
+              <label>Umbral de advertencia (dias)
                 <input id="set-warning-days" inputmode="numeric" autocomplete="off">
               </label>
-              <label>Danger threshold (days)
+              <label>Umbral de peligro (dias)
                 <input id="set-danger-days" inputmode="numeric" autocomplete="off">
               </label>
-              <label>Default projection months
+              <label>Meses de proyeccion predeterminados
                 <input id="set-projection-months" inputmode="numeric" autocomplete="off">
               </label>
-              <label class="toggle-row" style="align-self:end"><input type="checkbox" id="set-conservative"> Conservative purchase mode</label>
+              <label class="toggle-row" style="align-self:end"><input type="checkbox" id="set-conservative"> Modo de compra conservador</label>
             </div>
-            <button class="primary-button" type="submit">Save settings</button>
+            <button class="primary-button" type="submit">Guardar configuracion</button>
             <p class="form-error" id="settings-form-error" role="alert"></p>
           </form>
 
           <div class="form-panel">
-            <div class="form-title-row"><h3>Categories</h3></div>
-            <label>Expense categories (comma separated)
+            <div class="form-title-row"><h3>Categorias</h3></div>
+            <label>Gasto categories (comma separated)
               <textarea id="set-expense-cats" rows="3"></textarea>
             </label>
-            <label>Income categories (comma separated)
+            <label>Ingreso categories (comma separated)
               <textarea id="set-income-cats" rows="2"></textarea>
             </label>
-            <button class="secondary-button" type="button" id="save-cats-btn">Save categories</button>
+            <button class="secondary-button" type="button" id="save-cats-btn">Guardar categorias</button>
           </div>
 
           <div class="form-panel">
-            <div class="form-title-row"><h3>Backup &amp; data</h3></div>
+            <div class="form-title-row"><h3>Respaldo y datos</h3></div>
             <div class="settings-actions">
-              <button class="secondary-button" type="button" id="export-json">Export full backup (JSON)</button>
-              <label class="file-button">Import backup (JSON)
+              <button class="secondary-button" type="button" id="export-json">Exportar respaldo completo (JSON)</button>
+              <label class="file-button">Importar respaldo (JSON)
                 <input type="file" id="import-json" accept="application/json,.json">
               </label>
-              <button class="secondary-button" type="button" id="export-cards-csv">Cards CSV</button>
-              <button class="secondary-button" type="button" id="export-debts-csv">Debts CSV</button>
-              <button class="secondary-button" type="button" id="export-subs-csv">Subscriptions CSV</button>
+              <button class="secondary-button" type="button" id="export-cards-csv">Tarjetas CSV</button>
+              <button class="secondary-button" type="button" id="export-debts-csv">Deudas CSV</button>
+              <button class="secondary-button" type="button" id="export-subs-csv">Suscripciones CSV</button>
             </div>
-            <div class="form-title-row" style="margin-top:18px"><h3>Migrate old apps</h3></div>
-            <p class="muted small">Import a backup exported from the original <b>PagoClaro</b> or <b>Javi's Finance</b> app. Existing data is preserved and merged.</p>
+            <div class="form-title-row" style="margin-top:18px"><h3>Migrar apps antiguas</h3></div>
+            <p class="muted small">Importa un respaldo exportado desde la app original <b>PagoClaro</b> o <b>Javi's Finance</b>. Los datos existentes se conservan y se combinan.</p>
             <div class="settings-actions">
-              <label class="file-button">Import PagoClaro JSON
+              <label class="file-button">Importar JSON de PagoClaro
                 <input type="file" id="import-pagoclaro" accept="application/json,.json">
               </label>
-              <label class="file-button">Import Javi's Finance JSON
+              <label class="file-button">Importar JSON de Javi's Finance
                 <input type="file" id="import-javis" accept="application/json,.json">
               </label>
             </div>
             <div class="settings-actions" style="margin-top:18px">
-              <button class="danger-button" type="button" id="reset-data">Reset all data</button>
+              <button class="danger-button" type="button" id="reset-data">Restablecer todos los datos</button>
             </div>
           </div>
 
-          <p class="muted small center">Javi's Finance Hub · v1.0.0 · all data stored locally on this device.</p>
+          <p class="muted small center">Hub Financiero de Javi · v1.0.0 · todos los datos se guardan localmente en este dispositivo.</p>
         </section>
 
         <!-- ========== MORE (mobile menu) ========== -->
         <section class="section" id="more">
           <div class="section-head">
             <div>
-              <h3>More</h3>
-              <p>All sections of Finance Hub.</p>
+              <h3>Mas</h3>
+              <p>Todas las secciones de Hub Financiero.</p>
             </div>
           </div>
           <nav class="nav-list more-list" id="more-nav"></nav>
@@ -564,37 +564,37 @@
     </div>
 
     <!-- ================= BOTTOM NAV (mobile) ================= -->
-    <nav class="bottom-nav" aria-label="Primary navigation">
+    <nav class="bottom-nav" aria-label="Navegacion principal">
       <button class="nav-button active" type="button" data-section="dashboard">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
-        <span>Home</span>
+        <span>Inicio</span>
       </button>
       <button class="nav-button" type="button" data-section="transactions">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-        <span>Txns</span>
+        <span>Movs</span>
       </button>
       <button class="nav-button" type="button" data-section="cards">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 9.5h19M6 14.5h4"/></svg>
-        <span>Cards</span>
+        <span>Tarjetas</span>
       </button>
       <button class="nav-button" type="button" data-section="planner">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4h6v3H9zM8.5 12h7M8.5 16h4.5"/></svg>
-        <span>Planner</span>
+        <span>Plan</span>
       </button>
       <button class="nav-button" type="button" data-section="more">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
-        <span>More</span>
+        <span>Mas</span>
       </button>
     </nav>
 
     <!-- ================= CONFIRM MODAL ================= -->
     <div class="modal-backdrop hidden" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
       <div class="modal">
-        <h3 id="confirm-title">Confirm action</h3>
+        <h3 id="confirm-title">Confirmar accion</h3>
         <p id="confirm-message"></p>
         <div class="modal-actions">
-          <button class="secondary-button" type="button" id="confirm-cancel">Cancel</button>
-          <button class="danger-button" type="button" id="confirm-accept">Confirm</button>
+          <button class="secondary-button" type="button" id="confirm-cancel">Cancelar</button>
+          <button class="danger-button" type="button" id="confirm-accept">Confirmar</button>
         </div>
       </div>
     </div>
@@ -603,8 +603,8 @@
     <div class="modal-backdrop hidden" id="form-modal" role="dialog" aria-modal="true">
       <div class="modal modal-wide">
         <div class="modal-head">
-          <h3 id="form-modal-title">Title</h3>
-          <button class="icon-btn" type="button" id="form-modal-close" aria-label="Close">✕</button>
+          <h3 id="form-modal-title">Titulo</h3>
+          <button class="icon-btn" type="button" id="form-modal-close" aria-label="Cerrar">✕</button>
         </div>
         <div id="form-modal-body"></div>
       </div>
@@ -616,3 +616,4 @@
     <script src="app.js"></script>
   </body>
 </html>
+
