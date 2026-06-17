@@ -370,26 +370,53 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .nav-button .nav-ico { width: 22px; height: 22px; flex: none; stroke: currentColor; }
 .nav-button.active { background: var(--clay-soft); color: var(--clay-dark); border-color: rgba(182, 90, 48, 0.28); }
 
+/* Modern iPhone-style floating dock */
 .bottom-nav {
   position: fixed;
   z-index: 30;
-  right: calc(10px + var(--safe-right));
-  left: calc(10px + var(--safe-left));
-  bottom: calc(8px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(10px + var(--safe-bottom));
+  width: min(430px, calc(100% - 22px));
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-  padding: 8px 8px;
-  border: 1px solid var(--line-strong);
-  border-radius: 22px;
-  background: rgba(253, 250, 242, 0.86);
-  -webkit-backdrop-filter: saturate(1.2) blur(14px);
-  backdrop-filter: saturate(1.2) blur(14px);
-  box-shadow: var(--shadow);
+  gap: 2px;
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 30px;
+  background: rgba(253, 250, 242, 0.7);
+  -webkit-backdrop-filter: saturate(1.8) blur(22px);
+  backdrop-filter: saturate(1.8) blur(22px);
+  box-shadow:
+    0 10px 34px rgba(92, 66, 30, 0.2),
+    0 3px 10px rgba(92, 66, 30, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
-.bottom-nav .nav-button { flex-direction: column; gap: 3px; min-height: 52px; padding: 6px 2px; border-radius: 14px; font-size: 0.68rem; font-weight: 700; }
-.bottom-nav .nav-button .nav-ico { width: 23px; height: 23px; }
-.bottom-nav .nav-button.active { background: var(--clay-soft); }
+.bottom-nav .nav-button {
+  position: relative;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 50px;
+  padding: 7px 2px 6px;
+  border: 0;
+  border-radius: 20px;
+  color: var(--ink-2);
+  font-size: 0.63rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: color 0.2s ease, transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.bottom-nav .nav-button .nav-ico {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.bottom-nav .nav-button:active { transform: scale(0.92); }
+.bottom-nav .nav-button.active {
+  background: var(--clay-soft);
+  color: var(--clay-dark);
+}
+.bottom-nav .nav-button.active .nav-ico { transform: translateY(-1px) scale(1.08); }
 
 .more-list { display: grid; gap: 10px; }
 .more-list .nav-button { justify-content: flex-start; border: 1px solid var(--line); background: var(--sheet); box-shadow: var(--shadow-soft); }
@@ -720,7 +747,11 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   }
   :root:not([data-theme="light"]) .primary-button,
   :root:not([data-theme="light"]) .brand-mark { color: #1d120b; }
-  :root:not([data-theme="light"]) .bottom-nav { background: rgba(42, 29, 20, 0.86); box-shadow: var(--shadow), 0 0 34px rgba(255, 184, 88, 0.08); }
+  :root:not([data-theme="light"]) .bottom-nav {
+    background: rgba(42, 29, 20, 0.66);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.4), 0 0 34px rgba(255, 184, 88, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
   :root:not([data-theme="light"]) tbody tr:nth-child(even) td { background: rgba(53, 38, 25, 0.48); }
   :root:not([data-theme="light"]) .empty-state, :root:not([data-theme="light"]) .empty { background: rgba(53, 38, 25, 0.35); }
   :root:not([data-theme="light"]) .toast { background: var(--sheet-2); color: var(--ink); }
@@ -752,7 +783,11 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'%3E%3Cpath fill='none' stroke='%23d6c19b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M1 1l6 7 6-7'/%3E%3C/svg%3E");
 }
 :root[data-theme="dark"] .primary-button, :root[data-theme="dark"] .brand-mark { color: #1d120b; }
-:root[data-theme="dark"] .bottom-nav { background: rgba(42, 29, 20, 0.86); box-shadow: var(--shadow), 0 0 34px rgba(255, 184, 88, 0.08); }
+:root[data-theme="dark"] .bottom-nav {
+  background: rgba(42, 29, 20, 0.66);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.4), 0 0 34px rgba(255, 184, 88, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
 :root[data-theme="dark"] tbody tr:nth-child(even) td { background: rgba(53, 38, 25, 0.48); }
 :root[data-theme="dark"] .empty-state, :root[data-theme="dark"] .empty { background: rgba(53, 38, 25, 0.35); }
 :root[data-theme="dark"] .toast { background: var(--sheet-2); color: var(--ink); }
