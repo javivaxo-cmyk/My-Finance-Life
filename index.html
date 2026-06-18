@@ -104,6 +104,39 @@
             <button type="button" id="ios-hint-dismiss" aria-label="Cerrar">&times;</button>
           </div>
 
+          <div class="form-panel">
+            <div class="form-title-row">
+              <h3>Agregar gasto rapido</h3>
+            </div>
+            <form id="quick-add-form" class="form-grid three">
+              <label>Monto
+                <input id="qa-amount" inputmode="decimal" placeholder="0.00" required>
+              </label>
+              <label>Categoria
+                <select id="qa-category"></select>
+              </label>
+              <label>Metodo de pago
+                <select id="qa-payment">
+                  <option value="cash">Efectivo</option>
+                  <option value="debit" selected>Debito</option>
+                  <option value="credit_card">Tarjeta de credito</option>
+                </select>
+              </label>
+              <label class="qa-card-field hidden" id="qa-card-wrap">Tarjeta de credito
+                <select id="qa-card"></select>
+              </label>
+              <label>Descripcion
+                <input id="qa-description" placeholder="ej. Comida">
+              </label>
+              <label>Fecha
+                <input id="qa-date" type="date" required>
+              </label>
+              <div class="form-actions" style="grid-column:1/-1">
+                <button type="submit" class="primary-button">Agregar gasto</button>
+              </div>
+            </form>
+          </div>
+
           <div class="section-head">
             <div>
               <h3>Control mensual</h3>
@@ -141,38 +174,6 @@
             <div id="dashboard-debt-list" class="debt-list"></div>
           </div>
 
-          <div class="form-panel">
-            <div class="form-title-row">
-              <h3>Agregar gasto rapido</h3>
-            </div>
-            <form id="quick-add-form" class="form-grid three">
-              <label>Monto
-                <input id="qa-amount" inputmode="decimal" placeholder="0.00" required>
-              </label>
-              <label>Categoria
-                <select id="qa-category"></select>
-              </label>
-              <label>Metodo de pago
-                <select id="qa-payment">
-                  <option value="cash">Efectivo</option>
-                  <option value="debit" selected>Debito</option>
-                  <option value="credit_card">Tarjeta de credito</option>
-                </select>
-              </label>
-              <label class="qa-card-field hidden" id="qa-card-wrap">Tarjeta de credito
-                <select id="qa-card"></select>
-              </label>
-              <label>Descripcion
-                <input id="qa-description" placeholder="ej. Comida">
-              </label>
-              <label>Fecha
-                <input id="qa-date" type="date" required>
-              </label>
-              <div class="form-actions" style="grid-column:1/-1">
-                <button type="submit" class="primary-button">Agregar gasto</button>
-              </div>
-            </form>
-          </div>
         </section>
 
         <!-- ========== TRANSACTIONS ========== -->
