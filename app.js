@@ -1884,13 +1884,47 @@ function exportFullBackup() {
 function csvEscape(v) { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
 function rowsToCsv(rows) { return rows.map((r) => r.map(csvEscape).join(",")).join("\n"); }
 
+// Build the transaction predicate + filename for a given period selection.
+//   range === "all"            → every transaction ever recorded
+//   range === {from,to} (ISO)  → inclusive date range (either bound optional)
+//   range falsy                → the month currently in focus (viewMonth)
+function transactionExportPlan(range) {
+  if (range === "all") {
+    return { predicate: () => true, name: "transactions-all.csv" };
+  }
+  if (range && range.month) {
+    return { predicate: (t) => inMonth(t.date, range.month), name: `transactions-${range.month}.csv` };
+  }
+  if (range && (range.from || range.to)) {
+    const from = range.from || "0000-00-00";
+    const to = range.to || "9999-12-31";
+    return {
+      predicate: (t) => typeof t.date === "string" && t.date >= from && t.date <= to,
+      name: `transactions-${range.from || "inicio"}_a_${range.to || "hoy"}.csv`,
+    };
+  }
+  return { predicate: (t) => inMonth(t.date, viewMonth), name: `transactions-${viewMonth}.csv` };
+}
+
+function exportTransactionsCSV(range) {
+  const { predicate, name } = transactionExportPlan(range);
+  const rows = [["id", "date", "type", "amount", "category", "description", "necessity", "paymentMethod", "cardId", "notes"]];
+  appData.transactions
+    .filter(predicate)
+    .slice()
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+    .forEach((t) => rows.push([t.id, t.date, t.type, t.amount, t.category, t.description, t.necessity, t.paymentMethod, t.cardId || "", t.notes]));
+  if (rows.length === 1) { toast("No hay transacciones en ese periodo."); return false; }
+  downloadFile(name, rowsToCsv(rows), "text/csv");
+  toast(`CSV exportado (${rows.length - 1} transacciones).`);
+  return true;
+}
+
 function exportCSV(kind) {
   let rows = [], name = "";
   if (kind === "transactions") {
-    name = `transactions-${viewMonth}.csv`;
-    rows.push(["id", "date", "type", "amount", "category", "description", "necessity", "paymentMethod", "cardId", "notes"]);
-    appData.transactions.filter((t) => inMonth(t.date, viewMonth)).forEach((t) =>
-      rows.push([t.id, t.date, t.type, t.amount, t.category, t.description, t.necessity, t.paymentMethod, t.cardId || "", t.notes]));
+    exportTransactionsCSV();
+    return;
   } else if (kind === "cards") {
     name = "cards.csv";
     rows.push(["bank", "name", "creditLimit", "currentBalance", "availableCredit", "minimumPayment", "noInterestPayment", "statementDay", "dueDay", "catAnnual", "priority"]);
@@ -1918,6 +1952,64 @@ function exportCSV(kind) {
   }
   downloadFile(name, rowsToCsv(rows), "text/csv");
   toast("CSV exported.");
+}
+
+// Distinct months present in the data, newest first ("YYYY-MM").
+function transactionMonths() {
+  const set = new Set();
+  appData.transactions.forEach((t) => { if (typeof t.date === "string" && t.date.length >= 7) set.add(t.date.slice(0, 7)); });
+  return [...set].sort((a, b) => (a < b ? 1 : -1));
+}
+
+function openTransactionExportModal() {
+  const months = transactionMonths();
+  const monthOpts = months.length
+    ? months.map((m) => `<option value="${m}" ${m === viewMonth ? "selected" : ""}>${m}</option>`).join("")
+    : `<option value="${viewMonth}" selected>${viewMonth}</option>`;
+  openFormModal("Exportar transacciones a CSV", `
+    <form id="export-period-form" class="form-panel" style="box-shadow:none;border:0;padding:0;margin:0">
+      <label>Periodo a exportar
+        <select id="ef-mode">
+          <option value="current">Mes en foco (${viewMonth})</option>
+          <option value="month">Un mes específico</option>
+          <option value="range">Rango de fechas</option>
+          <option value="all">Todo (desde el inicio)</option>
+        </select>
+      </label>
+      <label id="ef-month-wrap" class="hidden">Mes
+        <select id="ef-month">${monthOpts}</select>
+      </label>
+      <div id="ef-range-wrap" class="form-grid hidden">
+        <label>Desde<input type="date" id="ef-from"></label>
+        <label>Hasta<input type="date" id="ef-to"></label>
+      </div>
+      <p id="ef-count" class="muted small" style="margin:.4rem 0"></p>
+      <button type="submit" class="primary-button btn-block">Exportar CSV</button>
+    </form>`);
+
+  const rangeFor = () => {
+    const mode = el("ef-mode").value;
+    if (mode === "all") return "all";
+    if (mode === "month") return { month: el("ef-month").value };
+    if (mode === "range") return { from: el("ef-from").value || "", to: el("ef-to").value || "" };
+    return null; // current viewMonth
+  };
+  const refresh = () => {
+    const mode = el("ef-mode").value;
+    el("ef-month-wrap").classList.toggle("hidden", mode !== "month");
+    el("ef-range-wrap").classList.toggle("hidden", mode !== "range");
+    const { predicate } = transactionExportPlan(rangeFor());
+    const n = appData.transactions.filter(predicate).length;
+    el("ef-count").textContent = n === 1 ? "1 transacción se exportará." : `${n} transacciones se exportarán.`;
+  };
+  el("ef-mode").addEventListener("change", refresh);
+  ["ef-month", "ef-from", "ef-to"].forEach((id) => el(id) && el(id).addEventListener("change", refresh));
+  refresh();
+
+  el("export-period-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (exportTransactionsCSV(rangeFor())) closeFormModal();
+  });
 }
 
 function downloadCsvTemplate() {
@@ -2236,7 +2328,7 @@ function bindEvents() {
   // Transactions.
   el("add-txn-btn").addEventListener("click", () => openTransactionModal(null));
   ["txn-search", "txn-filter-category", "txn-filter-type", "txn-filter-method", "txn-sort"].forEach((id) => el(id).addEventListener("input", renderTransactions));
-  el("export-txn-csv").addEventListener("click", () => exportCSV("transactions"));
+  el("export-txn-csv").addEventListener("click", openTransactionExportModal);
   el("download-csv-template").addEventListener("click", downloadCsvTemplate);
   el("import-txn-csv").addEventListener("change", (e) => { const f = e.target.files[0]; if (f) openConfirm("Add the transactions from this CSV to your data?", () => importTransactionsCSV(f)); e.target.value = ""; });
 
