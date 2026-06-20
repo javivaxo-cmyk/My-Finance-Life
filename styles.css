@@ -784,13 +784,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   .nav-list .nav-button { justify-content: flex-start; text-align: left; }
   .main-content { padding: calc(30px + var(--safe-top)) 34px 40px; }
   .bottom-nav { display: none; }
-  #more, .bottom-nav { display: none; }
-  #more.active { display: none; }
-}
-
-/* Hide the "More" menu nav target on desktop even when activated */
-@media (min-width: 960px) {
-  .nav-button[data-section="more"] { display: none; }
+  /* On desktop the "More" menu is the only path to secondary sections,
+     so it stays reachable from the sidebar (unlike the old full-list nav). */
+  #more.active { display: block; }
 }
 
 /* ---------- Small phones ------------------------------------------------ */
