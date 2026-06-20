@@ -267,51 +267,6 @@
           <div id="planner-output"></div>
         </section>
 
-        <!-- ========== SIMULATOR ========== -->
-        <section class="section" id="simulator">
-          <div class="section-head">
-            <div>
-              <h3>Simulador de escenarios</h3>
-              <p>Prueba estrategias de pago y supuestos de gasto antes de comprometerte.</p>
-            </div>
-          </div>
-
-          <form class="form-panel" id="scenario-form">
-            <div class="form-grid three">
-              <label>Dinero disponible
-                <input id="sim-available" inputmode="decimal" autocomplete="off">
-              </label>
-              <label>Ingreso extra
-                <input id="sim-extra" inputmode="decimal" autocomplete="off" value="0">
-              </label>
-              <label>Gastos esenciales
-                <input id="sim-essential" inputmode="decimal" autocomplete="off" value="0">
-              </label>
-              <label>Gastos opcionales
-                <input id="sim-optional" inputmode="decimal" autocomplete="off" value="0">
-              </label>
-              <label>Meta de ahorro
-                <input id="sim-savings" inputmode="decimal" autocomplete="off" value="0">
-              </label>
-              <label>Estrategia de pago
-                <select id="sim-strategy">
-                  <option value="conservative">Conservadora (solo minimos)</option>
-                  <option value="balanced" selected>Balanceada (minimo + sin intereses)</option>
-                  <option value="aggressive">Agresiva (todo el excedente a deuda)</option>
-                  <option value="savings_first">Ahorro primero</option>
-                  <option value="custom">Presupuesto personalizado</option>
-                </select>
-              </label>
-              <label id="sim-custom-wrap" class="hidden">Presupuesto de deuda personalizado
-                <input id="sim-custom-budget" inputmode="decimal" autocomplete="off" value="0">
-              </label>
-            </div>
-            <button class="primary-button" type="submit">Ejecutar escenario</button>
-          </form>
-
-          <div id="scenario-output"></div>
-        </section>
-
         <!-- ========== SUBSCRIPTIONS ========== -->
         <section class="section" id="subscriptions">
           <div class="section-head">

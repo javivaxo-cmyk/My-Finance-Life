@@ -14,8 +14,8 @@
      6. Debt / card calculations
      7. Credit-card engine (movements, purchase, payment)
      8. Transactions engine (commit / reverse side effects)
-     9. Planner & simulator
-    10. Credit projection
+     9. Planner
+    10. Card spend averaging
     11. Purchase decision
     12. Rendering — each section
     13. Modals & forms
@@ -440,7 +440,7 @@ function getDaysUntil(dateObj, today = new Date()) {
     Date.UTC(base.getFullYear(), base.getMonth(), base.getDate())) / 86400000);
 }
 
-// Unified obligation list (cards + debts) used by dashboard, planner, simulator.
+// Unified obligation list (cards + debts) used by dashboard and planner.
 function buildObligations() {
   const out = [];
   activeCards().forEach((c) => {
@@ -704,38 +704,6 @@ function generatePaymentPlan({ available, extra, essential, savings, strategy })
   return { availableForDebt, allocation, obligations, strategy };
 }
 
-function simulateScenario(input) {
-  const obligations = buildObligations();
-  const base = Math.max(0, cleanNumber(input.available) + cleanNumber(input.extra)
-    - cleanNumber(input.essential) - cleanNumber(input.optional) - cleanNumber(input.savings));
-  const totalMin = toPeriod(calculateMinimumPayments());
-  const totalNoInt = toPeriod(calculateNoInterestPayments());
-
-  let debtBudget = base;
-  if (input.strategy === "conservative") debtBudget = Math.min(base, totalMin);
-  else if (input.strategy === "custom") debtBudget = Math.max(0, cleanNumber(input.customBudget));
-  // balanced / aggressive / savings_first all spend the available surplus on debt
-  // (savings already subtracted above for savings_first; conservative caps at minimums).
-
-  const allocation = allocatePayments(obligations, debtBudget);
-  const cardBalance = calculateTotalCreditCardBalance();
-  const limit = calculateTotalCreditLimit();
-  const utilBefore = limit > 0 ? (cardBalance / limit) * 100 : null;
-  // Approximate: assume allocated debt money reduces card balances first.
-  const appliedToCards = Math.min(allocation.totalAllocated, cardBalance);
-  const utilAfter = limit > 0 ? (Math.max(0, cardBalance - appliedToCards) / limit) * 100 : null;
-
-  return {
-    strategy: input.strategy, debtBudget, allocation,
-    minimumCovered: allocation.unpaidMinimum === 0,
-    noInterestCovered: allocation.unpaidNoInterest === 0,
-    remainingMoney: allocation.remaining,
-    estimatedSavings: input.strategy === "aggressive" ? cleanNumber(input.savings) : cleanNumber(input.savings) + allocation.remaining,
-    debtReduction: allocation.totalAllocated,
-    utilBefore, utilAfter
-  };
-}
-
 /* ---------------------------------------------------------------------------
    10. CARD SPEND AVERAGING
    --------------------------------------------------------------------------- */
@@ -813,7 +781,7 @@ function evaluatePurchaseDecision(input) {
    =========================================================================== */
 const SECTION_TITLES = {
   dashboard: "Hoy", transactions: "Movimientos", cards: "Tarjetas de credito y deudas",
-  planner: "Plan de pagos", simulator: "Simulador de escenarios", subscriptions: "Suscripciones",
+  planner: "Plan de pagos", subscriptions: "Suscripciones",
   decision: "Decision de compra", budgets: "Presupuestos", reports: "Reportes", settings: "Configuracion", more: "Mas"
 };
 const MONTH_SECTIONS = ["transactions", "budgets", "reports"];
@@ -1337,34 +1305,6 @@ function allocationTable(allocation, title) {
   }).join("");
   return `<div class="table-panel"><div class="panel-head"><h3>${escapeHtml(title)}</h3><p>Remaining: ${fmtMoney(allocation.remaining)}</p></div>
     <div class="table-wrap"><table><thead><tr><th>#</th><th>Account</th><th>Detail</th><th>Due</th><th>Days</th><th>Minimum</th><th>No-interest</th><th>Suggested</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-}
-
-/* ---------- Simulator ---------- */
-function renderScenario() {
-  const obligations = buildObligations();
-  if (!obligations.length) { el("scenario-output").innerHTML = `<div class="empty-state">Add cards or debts first to run scenarios.</div>`; return; }
-  const result = simulateScenario({
-    available: el("sim-available").value, extra: el("sim-extra").value,
-    essential: el("sim-essential").value, optional: el("sim-optional").value,
-    savings: el("sim-savings").value, strategy: el("sim-strategy").value,
-    customBudget: el("sim-custom-budget").value
-  });
-  const titleSuffix = isBiweekly() ? " (per quincena)" : "";
-  el("scenario-output").innerHTML = `
-    <div class="summary-grid">
-      ${summaryCard("Debt budget", fmtMoney(result.debtBudget))}
-      ${summaryCard("Minimums covered", result.minimumCovered ? "Yes" : "No")}
-      ${summaryCard("No-interest covered", result.noInterestCovered ? "Yes" : "No")}
-      ${summaryCard("Remaining money", fmtMoney(result.remainingMoney))}
-      ${summaryCard("Estimated savings", fmtMoney(result.estimatedSavings))}
-      ${summaryCard("Debt reduction", fmtMoney(result.debtReduction))}
-      ${summaryCard("Utilization now", result.utilBefore === null ? "—" : fmtPct(result.utilBefore))}
-      ${summaryCard("Utilization after", result.utilAfter === null ? "—" : fmtPct(result.utilAfter))}
-    </div>
-    ${allocationTable(result.allocation, `Scenario payment order${titleSuffix}`)}`;
-}
-function summaryCard(title, value) {
-  return `<article class="summary-card"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(value)}</p></article>`;
 }
 
 /* ===========================================================================
@@ -2138,12 +2078,11 @@ function showSection(id) {
   el("section-title").textContent = SECTION_TITLES[id] || "Finance Hub";
   el("month-switch").style.display = MONTH_SECTIONS.includes(id) ? "" : "none";
   if (id === "planner") { el("planner-available").value = el("planner-available").value || dashboardAvailableMoney; renderPlanner(); }
-  if (id === "simulator") { el("sim-available").value = el("sim-available").value || dashboardAvailableMoney; renderScenario(); }
   window.scrollTo(0, 0);
 }
 function buildMoreMenu() {
   const items = [
-    ["simulator", "Simulador de escenarios"], ["subscriptions", "Suscripciones"], ["decision", "Decision de compra"],
+    ["subscriptions", "Suscripciones"], ["decision", "Decision de compra"],
     ["budgets", "Presupuestos"], ["reports", "Reportes"], ["settings", "Configuracion"]
   ];
   el("more-nav").innerHTML = items.map(([id, label]) =>
@@ -2162,7 +2101,6 @@ function hydrateAll() {
   loadSettingsForm();
   el("dashboard-available").value = dashboardAvailableMoney;
   el("planner-available").value = dashboardAvailableMoney;
-  el("sim-available").value = dashboardAvailableMoney;
   el("qa-date").value = todayISO();
   renderAll();
 }
@@ -2209,11 +2147,9 @@ function bindEvents() {
   el("add-card-btn").addEventListener("click", () => openCardModal(null));
   el("add-debt-btn").addEventListener("click", () => openDebtModal(null));
 
-  // Planner & simulator.
+  // Planner.
   el("planner-form").addEventListener("submit", (e) => { e.preventDefault(); renderPlanner(); });
   el("planner-strategy").addEventListener("change", renderPlanner);
-  el("scenario-form").addEventListener("submit", (e) => { e.preventDefault(); renderScenario(); });
-  el("sim-strategy").addEventListener("change", (e) => el("sim-custom-wrap").classList.toggle("hidden", e.target.value !== "custom"));
 
   // Subscriptions / budgets / decision add.
   el("add-sub-btn").addEventListener("click", () => openSubscriptionModal(null));
