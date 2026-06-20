@@ -692,11 +692,16 @@ function rowStatus(r) {
   return { label: "Cubierto", level: "safe" };
 }
 
-function generatePaymentPlan({ available, extra, essential, savings }) {
-  const availableForDebt = Math.max(0, cleanNumber(available) + cleanNumber(extra) - cleanNumber(essential) - cleanNumber(savings));
+function generatePaymentPlan({ available, extra, essential, savings, strategy }) {
+  const surplus = Math.max(0, cleanNumber(available) + cleanNumber(extra) - cleanNumber(essential) - cleanNumber(savings));
+  // Strategy caps how much of the surplus goes to debt this period.
+  let availableForDebt = surplus;
+  if (strategy === "conservative") availableForDebt = Math.min(surplus, toPeriod(calculateMinimumPayments()));
+  else if (strategy === "balanced") availableForDebt = Math.min(surplus, toPeriod(calculateNoInterestPayments()));
+  // "aggressive" applies the whole surplus to debt.
   const obligations = buildObligations();
   const allocation = allocatePayments(obligations, availableForDebt);
-  return { availableForDebt, allocation, obligations };
+  return { availableForDebt, allocation, obligations, strategy };
 }
 
 function simulateScenario(input) {
@@ -852,11 +857,11 @@ function evaluatePurchaseDecision(input) {
    12. RENDERING
    =========================================================================== */
 const SECTION_TITLES = {
-  dashboard: "Panel", transactions: "Transacciones", cards: "Tarjetas de credito y deudas",
-  planner: "Planificador de pagos", simulator: "Simulador de escenarios", subscriptions: "Suscripciones",
+  dashboard: "Hoy", transactions: "Movimientos", cards: "Tarjetas de credito y deudas",
+  planner: "Plan de pagos", simulator: "Simulador de escenarios", subscriptions: "Suscripciones",
   decision: "Decision de compra", budgets: "Presupuestos", reports: "Reportes", settings: "Configuracion", more: "Mas"
 };
-const MONTH_SECTIONS = ["dashboard", "transactions", "budgets", "reports"];
+const MONTH_SECTIONS = ["transactions", "budgets", "reports"];
 
 function renderAll() {
   el("current-month-label").textContent = monthLabel(viewMonth);
@@ -869,147 +874,109 @@ function renderAll() {
   renderReports();
 }
 
-/* ---------- Dashboard ---------- */
+/* ---------- Dashboard: "Today / Payday Decision" ---------- */
 function renderDashboard() {
-  const s = calculateMonthlySummary(viewMonth);
-  const subs = calculateSubscriptionImpact();
-  const totalDebt = calculateTotalDebt();
-  const util = calculateGlobalCreditUtilization();
   const periodMin = toPeriod(calculateMinimumPayments());
   const periodNoInt = toPeriod(calculateNoInterestPayments());
+  const util = calculateGlobalCreditUtilization();
   const obligations = sortObligationsByUrgency(buildObligations());
   const nearest = obligations[0];
-
-  const metrics = [
-    ["Monthly Income", fmtMoney(s.income), "Expected or recorded, whichever is higher", ""],
-    ["Monthly Expenses", fmtMoney(s.totalSpent), `${fmtMoney(s.dailyAvg)} / day average`, ""],
-    ["Remaining Money", fmtMoney(s.remaining), s.remaining >= 0 ? "Cash left this month" : "Over budget", s.remaining >= 0 ? "safe" : "danger"],
-    ["Estimated Savings", fmtMoney(s.savings), `Savings rate ${fmtPct(s.savingsRate)}`, s.savingsRate >= cleanNumber(appData.settings.savingsGoalPercent) ? "safe" : "warning"],
-    ["Total Debt", fmtMoney(totalDebt), `${fmtMoney(calculateTotalCreditCardBalance())} cards · ${fmtMoney(calculateTotalNonCardDebt())} loans`, ""],
-    ["Credit Utilization", util === null ? "No cards" : fmtPct(util), `${fmtMoney(calculateTotalAvailableCredit())} available`, utilizationLevel(util)],
-    [`${periodAdjective()} Minimums`, fmtMoney(periodMin), dashboardAvailableMoney >= periodMin ? "Covered by available money" : "Not fully covered", dashboardAvailableMoney >= periodMin ? "safe" : "danger"],
-    ["No-Interest Target", fmtMoney(periodNoInt), dashboardAvailableMoney >= periodNoInt ? "Covered" : "Short this period", dashboardAvailableMoney >= periodNoInt ? "safe" : "warning"],
-    ["Next Payment", nearest ? `${nearest.title}` : "None", nearest ? `${nearest.dueDate ? formatDate(nearest.dueDate) : "no date"} · ${Number.isFinite(nearest.daysUntilDue) ? nearest.daysUntilDue + " days" : "—"}` : "No debts or cards", ""],
-    ["Subscription Impact", fmtMoney(subs.monthly), `${fmtPct(subs.pctOfIncome)} of income`, subs.pctOfIncome > 10 ? "warning" : ""],
-    ["Optional Spending", fmtMoney(s.optional), `${fmtMoney(s.essential)} essential`, s.optional > s.essential ? "warning" : ""],
-    ["No-Spend Streak", calculateNoSpendStreak() + " days", "Days since last expense", ""]
-  ];
-
-  el("dashboard-metrics").innerHTML = metrics.map(([label, value, note, level]) => `
-    <article class="metric-card ${level || ""}">
-      <div class="metric-label">${escapeHtml(label)}</div>
-      <div class="metric-value">${escapeHtml(value)}</div>
-      <p class="metric-note">${escapeHtml(note)}</p>
-    </article>`).join("");
-
-  renderDashboardAlerts(s, subs, util, periodMin, periodNoInt, obligations);
-  renderSafetyStatus(periodMin, periodNoInt);
-  renderDashboardBars(s, subs);
-
-  el("dashboard-debt-list").innerHTML = obligations.length
-    ? obligations.map((ob) => obligationCardHtml(ob, { compact: true })).join("")
-    : `<div class="empty-state">No cards or debts yet. Add one in Cards &amp; Debts.</div>`;
-}
-
-function renderDashboardAlerts(s, subs, util, periodMin, periodNoInt, obligations) {
-  const alerts = [];
-  if (dashboardAvailableMoney < periodMin) alerts.push(["danger", `Minimum payments are not covered — short by ${fmtMoney(periodMin - dashboardAvailableMoney)}.`]);
-  else if (dashboardAvailableMoney < periodNoInt) alerts.push(["warning", `No-interest payments short by ${fmtMoney(periodNoInt - dashboardAvailableMoney)}.`]);
-  if (util !== null && util > 70) alerts.push(["danger", `Credit utilization is ${fmtPct(util)} — above the safe range. Avoid new card spending.`]);
-  else if (util !== null && util >= 40) alerts.push(["warning", `Credit utilization is ${fmtPct(util)}. Keep an eye on card balances.`]);
-  obligations.forEach((ob) => {
-    const st = obligationStatus(ob);
-    if (st.level === "danger") alerts.push(["danger", `${ob.title} is ${st.label.toLowerCase()} (${ob.dueDate ? formatDate(ob.dueDate) : "no date"}).`]);
-  });
-  if (subs.pctOfIncome > 10) alerts.push(["warning", `Subscriptions take ${fmtPct(subs.pctOfIncome)} of income. Review optional ones.`]);
-  const overall = appData.budgets.find((b) => b.active && b.type === "general");
-  if (overall && s.totalSpent > cleanNumber(overall.limit)) alerts.push(["danger", `Overall budget exceeded by ${fmtMoney(s.totalSpent - cleanNumber(overall.limit))}.`]);
-  if (s.optional > s.income * 0.3) alerts.push(["warning", "Optional spending is high this month. Consider delaying non-essentials."]);
-
-  el("dashboard-alerts").innerHTML = alerts.length
-    ? alerts.slice(0, 6).map(([cls, msg]) => `<div class="alert ${cls}">${escapeHtml(msg)}</div>`).join("")
-    : `<div class="alert safe">Everything looks on track. Nice discipline.</div>`;
-}
-
-function renderSafetyStatus(periodMin, periodNoInt) {
-  let level = "neutral", text = "No active debt data yet.";
+  const available = dashboardAvailableMoney;
+  const hasDebt = obligations.length > 0;
   const word = periodNoun();
-  if (buildObligations().length > 0) {
-    if (dashboardAvailableMoney < periodMin) { level = "danger"; text = `Danger: this ${word}'s minimum payments are short by ${fmtMoney(periodMin - dashboardAvailableMoney)}.`; }
-    else if (dashboardAvailableMoney < periodNoInt) { level = "warning"; text = `Warning: minimums covered, but no-interest payments are short by ${fmtMoney(periodNoInt - dashboardAvailableMoney)}.`; }
-    else { level = "safe"; text = `Safe: this ${word}'s no-interest payments are covered.`; }
-  }
-  const panel = el("safety-status");
-  panel.className = `status-panel ${level}`;
-  panel.innerHTML = `<strong>Payment Safety Status</strong><p>${escapeHtml(text)}</p>`;
-}
 
-function renderDashboardBars(s, subs) {
-  const income = s.income;
-  const overall = appData.budgets.find((b) => b.active && b.type === "general");
-  const budgetAmt = overall ? cleanNumber(overall.limit) : cleanNumber(appData.settings.monthlyBudget);
-  const spendIncomePct = income > 0 ? (s.totalSpent / income) * 100 : 0;
-  const budgetPct = budgetAmt > 0 ? (s.totalSpent / budgetAmt) * 100 : 0;
-  const savingsGoalAmt = income * (cleanNumber(appData.settings.savingsGoalPercent) / 100);
-  const savingsGoalPct = savingsGoalAmt > 0 ? (s.savings / savingsGoalAmt) * 100 : 0;
-
-  const bars = [
-    ["Spending vs income", spendIncomePct, spendIncomePct >= 100 ? "danger" : spendIncomePct >= 80 ? "warn" : ""],
-    ["Spending vs budget", budgetPct, budgetPct >= 100 ? "danger" : budgetPct >= 80 ? "warn" : ""],
-    ["Subscriptions vs income", subs.pctOfIncome, subs.pctOfIncome >= 15 ? "warn" : ""],
-    ["Savings goal", savingsGoalPct, "info"]
-  ];
-  el("dashboard-bars").innerHTML = bars.map(([label, pct, cls]) => `
-    <div class="bar-row">
-      <span class="bar-row__label">${escapeHtml(label)} <em>${fmtPct(pct)}</em></span>
-      <div class="bar"><div class="bar__fill ${cls}" style="width:${clampPct(pct)}%"></div></div>
-    </div>`).join("");
-}
-
-function obligationCardHtml(ob, opts = {}) {
-  const st = obligationStatus(ob);
-  const isCard = ob.kind === "card";
-  const c = ob.ref;
-  let details = "";
-  if (isCard) {
-    const util = ob.utilization;
-    const uLevel = utilizationLevel(util);
-    const meterCls = uLevel === "critical" || uLevel === "danger" ? "danger" : uLevel === "warning" ? "warn" : "";
-    details = `
-      <div class="detail-grid">
-        <div class="detail-item"><div class="detail-label">Balance</div><div class="detail-value">${fmtMoney(c.currentBalance)}</div></div>
-        <div class="detail-item"><div class="detail-label">Available credit</div><div class="detail-value">${fmtMoney(c.availableCredit)}</div></div>
-        <div class="detail-item"><div class="detail-label">Limit</div><div class="detail-value">${fmtMoney(c.creditLimit)}</div></div>
-        <div class="detail-item"><div class="detail-label">Minimum</div><div class="detail-value">${fmtMoney(c.minimumPayment)}</div></div>
-        <div class="detail-item"><div class="detail-label">No-interest</div><div class="detail-value">${fmtMoney(c.noInterestPayment)}</div></div>
-        <div class="detail-item"><div class="detail-label">Due date</div><div class="detail-value">${formatDate(ob.dueDate)}</div></div>
-      </div>
-      <div style="margin-top:10px">
-        <div class="bar-row__label"><span>Utilization</span><em>${util === null ? "—" : fmtPct(util)}</em></div>
-        <div class="meter"><div class="meter__fill ${meterCls}" style="width:${clampPct(util || 0)}%"></div></div>
-      </div>`;
+  // --- Decide the single most important status for the period. ---
+  let level, heroLabel, heroValue, heroNote, action, actionLevel;
+  if (!hasDebt) {
+    level = "safe";
+    heroLabel = "Seguro para gastar";
+    heroValue = Math.max(0, available);
+    heroNote = "Sin tarjetas ni deudas registradas.";
+    action = "Agrega tus tarjetas y deudas para recibir recomendaciones de pago.";
+    actionLevel = "neutral";
+  } else if (available < periodMin) {
+    level = "danger";
+    heroLabel = "Falta para cubrir minimos";
+    heroValue = periodMin - available;
+    heroNote = `Necesitas ${fmtMoney(periodMin)} en pagos minimos esta ${word}.`;
+    action = nearest
+      ? `Paga ${nearest.title} primero. Evita gastar con tarjeta de credito.`
+      : "Cubre tus pagos minimos antes de gastar.";
+    actionLevel = "danger";
+  } else if (available < periodNoInt) {
+    level = "warning";
+    heroLabel = "Seguro para gastar";
+    heroValue = Math.max(0, available - periodNoInt);
+    heroNote = `Minimos cubiertos. Reserva para evitar intereses: ${fmtMoney(periodNoInt)}.`;
+    action = `Minimos cubiertos, pero la meta sin intereses esta corta por ${fmtMoney(periodNoInt - available)}.`;
+    actionLevel = "warning";
   } else {
-    details = `
-      <div class="detail-grid">
-        <div class="detail-item"><div class="detail-label">Total debt</div><div class="detail-value">${fmtMoney(c.totalDebt)}</div></div>
-        <div class="detail-item"><div class="detail-label">Minimum</div><div class="detail-value">${fmtMoney(c.minimumPayment)}</div></div>
-        <div class="detail-item"><div class="detail-label">No-interest</div><div class="detail-value">${fmtMoney(c.noInterestPayment)}</div></div>
-        <div class="detail-item"><div class="detail-label">Due date</div><div class="detail-value">${ob.dueDate ? formatDate(ob.dueDate) : "Not set"}</div></div>
-        <div class="detail-item"><div class="detail-label">Priority</div><div class="detail-value">${escapeHtml(c.priority)}</div></div>
-        <div class="detail-item"><div class="detail-label">Days left</div><div class="detail-value">${Number.isFinite(ob.daysUntilDue) ? ob.daysUntilDue : "—"}</div></div>
-      </div>`;
+    level = "safe";
+    heroLabel = "Seguro para gastar";
+    heroValue = available - periodNoInt;
+    heroNote = `Despues de cubrir minimos y meta sin intereses esta ${word}.`;
+    action = `Vas seguro esta ${word}. Manten tus gastos por debajo de ${fmtMoney(heroValue)}.`;
+    actionLevel = "safe";
   }
-  return `
-    <article class="debt-card">
-      <div class="debt-card-head">
-        <div>
-          <div class="debt-title">${escapeHtml(ob.title)}</div>
-          <p class="debt-subtitle">${escapeHtml(ob.subtitle)}</p>
-        </div>
+  if (util !== null && util > 70 && actionLevel !== "danger") {
+    action += ` Uso de credito alto (${fmtPct(util)}); evita nuevas compras con tarjeta.`;
+  }
+
+  // --- 1. Safe to spend hero. ---
+  const hero = el("today-hero");
+  hero.className = `today-hero ${level}`;
+  el("today-hero-label").textContent = heroLabel;
+  el("today-hero-value").textContent = fmtMoney(heroValue);
+  el("today-hero-note").textContent = heroNote;
+
+  // --- 2. Recommended action. ---
+  const actionPanel = el("today-action");
+  actionPanel.className = `status-panel ${actionLevel}`;
+  actionPanel.innerHTML = `<strong>Que hacer ahora</strong><p>${escapeHtml(action)}</p>`;
+
+  // --- 3. Next payment due. ---
+  const nextEl = el("today-next");
+  if (nearest) {
+    const st = obligationStatus(nearest);
+    const days = nearest.daysUntilDue;
+    const daysTxt = !Number.isFinite(days) ? "Sin fecha"
+      : days < 0 ? `Vencido hace ${Math.abs(days)} d`
+      : days === 0 ? "Vence hoy"
+      : `En ${days} dia${days === 1 ? "" : "s"}`;
+    nextEl.innerHTML = `
+      <div class="today-card__head">
+        <span class="today-card__kicker">Proximo pago</span>
         <span class="chip ${st.level}">${st.label}</span>
       </div>
-      ${details}
-    </article>`;
+      <div class="today-next__row">
+        <div>
+          <div class="today-next__name">${escapeHtml(nearest.title)}</div>
+          <p class="today-card__sub">${nearest.dueDate ? formatDate(nearest.dueDate) : "Sin fecha"} · ${daysTxt}</p>
+        </div>
+        <div class="today-next__amount">${fmtMoney(nearest.minimum)}</div>
+      </div>`;
+  } else {
+    nextEl.innerHTML = `<span class="today-card__kicker">Proximo pago</span><p class="today-card__sub">No hay pagos proximos.</p>`;
+  }
+
+  // --- 4. This payday summary. ---
+  const diff = available - periodNoInt;
+  const rows = [
+    ["Dinero disponible", fmtMoney(available), ""],
+    ["Pagos minimos", fmtMoney(periodMin), available >= periodMin ? "safe" : "danger"],
+    ["Meta sin intereses", fmtMoney(periodNoInt), available >= periodNoInt ? "safe" : "warning"],
+    [diff >= 0 ? "Excedente" : "Faltante", fmtMoney(Math.abs(diff)), diff >= 0 ? "safe" : "danger"],
+    ["Uso de credito", util === null ? "—" : fmtPct(util), utilizationLevel(util)]
+  ];
+  el("today-summary").innerHTML = `
+    <span class="today-card__kicker">Resumen · ${periodAdjective()}</span>
+    <div class="today-summary__grid">
+      ${rows.map(([l, v, lvl]) => `
+        <div class="today-summary__item ${lvl || ""}">
+          <span class="today-summary__label">${escapeHtml(l)}</span>
+          <span class="today-summary__value">${escapeHtml(v)}</span>
+        </div>`).join("")}
+    </div>`;
 }
 
 /* ---------- Cards & Debts ---------- */
@@ -1432,7 +1399,8 @@ function renderPlanner() {
     available: el("planner-available").value,
     extra: el("planner-extra").value,
     essential: el("planner-expenses").value,
-    savings: el("planner-savings").value
+    savings: el("planner-savings").value,
+    strategy: el("planner-strategy").value
   });
   const word = periodNoun();
   const titleSuffix = isBiweekly() ? " (per quincena)" : "";
@@ -2271,8 +2239,8 @@ function showSection(id) {
 }
 function buildMoreMenu() {
   const items = [
-    ["simulator", "Scenario Simulator"], ["subscriptions", "Subscriptions"], ["decision", "Purchase Decision"],
-    ["budgets", "Budgets"], ["reports", "Reports"], ["settings", "Settings"]
+    ["simulator", "Simulador de escenarios"], ["subscriptions", "Suscripciones"], ["decision", "Decision de compra"],
+    ["budgets", "Presupuestos"], ["reports", "Reportes"], ["settings", "Configuracion"]
   ];
   el("more-nav").innerHTML = items.map(([id, label]) =>
     `<button class="nav-button" type="button" data-section="${id}"><span>${escapeHtml(label)}</span></button>`).join("");
@@ -2339,6 +2307,7 @@ function bindEvents() {
 
   // Planner & simulator.
   el("planner-form").addEventListener("submit", (e) => { e.preventDefault(); renderPlanner(); });
+  el("planner-strategy").addEventListener("change", renderPlanner);
   el("scenario-form").addEventListener("submit", (e) => { e.preventDefault(); renderScenario(); });
   el("sim-strategy").addEventListener("change", (e) => el("sim-custom-wrap").classList.toggle("hidden", e.target.value !== "custom"));
 

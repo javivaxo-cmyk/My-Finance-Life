@@ -6,7 +6,7 @@
    first load. Bump CACHE_NAME whenever the cached assets change.
    ========================================================================= */
 
-const CACHE_NAME = "finance-hub-v1";
+const CACHE_NAME = "finance-hub-v2";
 const CORE_ASSETS = [
   "./",
   "index.html",

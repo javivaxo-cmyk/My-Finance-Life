@@ -597,6 +597,92 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 
 .hidden { display: none !important; }
 
+/* ---------- Today / Payday Decision screen ------------------------------ */
+.today-hero {
+  position: relative;
+  margin: 4px 0 18px;
+  padding: 26px 24px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.today-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: var(--line-strong);
+}
+.today-hero.safe::before { background: var(--safe); }
+.today-hero.warning::before { background: var(--warn); }
+.today-hero.danger::before { background: var(--danger); }
+.today-hero__label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.today-hero__value {
+  font-family: var(--font-serif);
+  font-size: clamp(2.6rem, 12vw, 4rem);
+  font-weight: 700;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+.today-hero.safe .today-hero__value { color: var(--safe); }
+.today-hero.warning .today-hero__value { color: var(--warn); }
+.today-hero.danger .today-hero__value { color: var(--danger); }
+.today-hero__note { margin: 10px 0 0; color: var(--ink-2); font-size: 0.92rem; }
+
+.today-card {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  box-shadow: var(--shadow-soft);
+}
+.today-card__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.today-card__kicker {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.today-card__sub { margin: 4px 0 0; color: var(--ink-2); font-size: 0.9rem; }
+
+.today-next__row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 12px; }
+.today-next__name { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 700; }
+.today-next__amount { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 700; white-space: nowrap; }
+
+.today-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.today-summary__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--sheet-2);
+  border-left: 4px solid var(--line-strong);
+}
+.today-summary__item.safe { border-left-color: var(--safe); }
+.today-summary__item.warning { border-left-color: var(--warn); }
+.today-summary__item.danger { border-left-color: var(--danger); }
+.today-summary__label { color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+.today-summary__value { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 700; overflow-wrap: anywhere; }
+
 .empty-state, .empty {
   display: grid;
   gap: 4px;
