@@ -737,14 +737,8 @@ function simulateScenario(input) {
 }
 
 /* ---------------------------------------------------------------------------
-   10. CREDIT PROJECTION
+   10. CARD SPEND AVERAGING
    --------------------------------------------------------------------------- */
-function catToMonthlyRate(catAnnual) {
-  const annual = cleanNumber(catAnnual) / 100;
-  if (annual <= 0) return 0;
-  return Math.pow(1 + annual, 1 / 12) - 1;
-}
-
 // One average calendar month, used as the trailing window for spend averaging.
 const AVG_MONTH_DAYS = 30.4;
 
@@ -767,45 +761,6 @@ function effectiveMonthlySpend(card) {
   if (card.autoAverageSpend === false) return cleanNumber(card.averageMonthlySpend);
   const auto = computeAutoAverageMonthlySpend(card);
   return auto > 0 ? auto : cleanNumber(card.averageMonthlySpend);
-}
-
-// Project a card's balance month by month under a given payment + spend.
-function projectCardBalance(card, { monthlyPayment, monthlySpend, months }) {
-  const rate = catToMonthlyRate(card.catAnnual);
-  const limit = cleanNumber(card.creditLimit);
-  let balance = cleanNumber(card.currentBalance);
-  const series = [{ month: 0, balance, interest: 0, available: Math.max(0, limit - balance) }];
-  let totalInterest = 0;
-  let payoffMonth = null;
-  let limitRisk = false;
-
-  for (let m = 1; m <= months; m++) {
-    const interest = balance * rate;
-    totalInterest += interest;
-    let next = balance + cleanNumber(monthlySpend) + interest - cleanNumber(monthlyPayment);
-    if (next < 0) next = 0;
-    if (limit > 0 && next > limit) limitRisk = true;
-    balance = next;
-    series.push({ month: m, balance, interest, available: limit > 0 ? limit - balance : 0 });
-    if (payoffMonth === null && balance <= 0.005) payoffMonth = m;
-  }
-  const finalUtil = limit > 0 ? (balance / limit) * 100 : null;
-  return { series, totalInterest, payoffMonth, limitRisk, finalBalance: balance, finalUtil };
-}
-
-// Build the five comparison scenarios for a card.
-function projectionScenarios(card) {
-  const months = clampInteger(appData.settings.defaultProjectionMonths, 1, 60);
-  const avg = effectiveMonthlySpend(card);
-  const expected = cleanNumber(card.expectedMonthlyPayment) || cleanNumber(card.minimumPayment);
-  const aggressive = Math.max(expected * 2, noInterestTarget(card) * 1.5, cleanNumber(card.currentBalance) / 6);
-  return [
-    { key: "minimum", label: "Minimo", color: "var(--danger)", ...projectCardBalance(card, { monthlyPayment: card.minimumPayment, monthlySpend: avg, months }) },
-    { key: "nointerest", label: "Sin intereses", color: "var(--warn)", ...projectCardBalance(card, { monthlyPayment: noInterestTarget(card), monthlySpend: avg, months }) },
-    { key: "expected", label: "Esperado", color: "var(--clay)", ...projectCardBalance(card, { monthlyPayment: expected, monthlySpend: avg, months }) },
-    { key: "aggressive", label: "Agresivo", color: "var(--sage)", ...projectCardBalance(card, { monthlyPayment: aggressive, monthlySpend: 0, months }) },
-    { key: "spending", label: "Seguir gastando", color: "var(--info)", ...projectCardBalance(card, { monthlyPayment: card.minimumPayment, monthlySpend: avg * 1.5, months }) }
-  ];
 }
 
 /* ---------------------------------------------------------------------------
@@ -1029,8 +984,6 @@ function cardCardHtml(c) {
       </div>
     </div>` : "";
 
-  const projection = c.creditLimit > 0 ? renderProjectionHtml(c) : "";
-
   return `
     <article class="debt-card">
       <div class="debt-card-head">
@@ -1056,7 +1009,6 @@ function cardCardHtml(c) {
         <div class="meter"><div class="meter__fill ${meterCls}" style="width:${clampPct(util || 0)}%"></div></div>
       </div>
       ${c.notes ? `<p class="muted">${escapeHtml(c.notes)}</p>` : ""}
-      ${projection}
       ${ledger}
       <div class="card-actions">
         <button class="secondary-button" type="button" data-card-purchase="${c.id}">+ Purchase</button>
@@ -1097,54 +1049,6 @@ function debtCardHtml(d) {
         <button class="danger-button" type="button" data-del-debt="${d.id}">Delete</button>
       </div>
     </article>`;
-}
-
-/* ---------- Projection chart (SVG) ---------- */
-function renderProjectionHtml(card) {
-  const scenarios = projectionScenarios(card);
-  const months = scenarios[0].series.length - 1;
-  const limit = cleanNumber(card.creditLimit);
-  const maxBalance = Math.max(limit, ...scenarios.flatMap((sc) => sc.series.map((p) => p.balance)));
-  const W = 320, H = 170, padL = 6, padR = 6, padT = 10, padB = 18;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  const x = (m) => padL + (months > 0 ? (m / months) * plotW : 0);
-  const y = (v) => padT + plotH - (maxBalance > 0 ? (v / maxBalance) * plotH : 0);
-
-  const limitY = limit > 0 ? y(limit) : null;
-  const paths = scenarios.map((sc) => {
-    const d = sc.series.map((p, i) => `${i === 0 ? "M" : "L"}${x(p.month).toFixed(1)},${y(p.balance).toFixed(1)}`).join(" ");
-    return `<path d="${d}" fill="none" style="stroke:${sc.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-  }).join("");
-
-  // Horizontal grid lines (4 divisions).
-  const grid = [0.25, 0.5, 0.75].map((f) => `<line class="grid-line" x1="${padL}" y1="${(padT + plotH * f).toFixed(1)}" x2="${W - padR}" y2="${(padT + plotH * f).toFixed(1)}"/>`).join("");
-
-  const legend = scenarios.map((sc) => `<span><i style="background:${sc.color}"></i>${escapeHtml(sc.label)}</span>`).join("");
-
-  const cards = scenarios.map((sc) => {
-    const payoff = sc.payoffMonth ? `${sc.payoffMonth} mo to payoff` : `Not paid in ${months} mo`;
-    const risk = sc.limitRisk ? ` · ⚠ limit risk` : "";
-    return `<div class="proj-scenario">
-      <strong>${escapeHtml(sc.label)}</strong>
-      <div class="num">${fmtMoney(sc.finalBalance)}</div>
-      <small>${payoff}${risk}</small>
-      <small>Interest ${fmtMoney(sc.totalInterest)} · util ${sc.finalUtil === null ? "—" : fmtPct(sc.finalUtil)}</small>
-    </div>`;
-  }).join("");
-
-  return `
-    <div class="card-extra projection">
-      <div class="panel-head"><h4 style="margin:0">Balance projection (${months} months)</h4></div>
-      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Credit card balance projection">
-        ${grid}
-        ${limitY !== null ? `<line class="limit-line" x1="${padL}" y1="${limitY.toFixed(1)}" x2="${W - padR}" y2="${limitY.toFixed(1)}"/><text class="axis-label" x="${padL + 2}" y="${(limitY - 3).toFixed(1)}">Limit ${fmtMoney(limit)}</text>` : ""}
-        ${paths}
-        <text class="axis-label" x="${padL}" y="${H - 4}">now</text>
-        <text class="axis-label" x="${W - padR}" y="${H - 4}" text-anchor="end">${months} mo</text>
-      </svg>
-      <div class="proj-legend">${legend}</div>
-      <div class="proj-scenarios">${cards}</div>
-    </div>`;
 }
 
 /* ---------- Transactions ---------- */
