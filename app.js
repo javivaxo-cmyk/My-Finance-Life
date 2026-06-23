@@ -40,7 +40,7 @@ const DEFAULT_EXPENSE_CATEGORIES = [
 const DEFAULT_INCOME_CATEGORIES = ["Salario", "Ingreso extra", "Reembolso", "Otro"];
 
 const PAYMENT_METHODS = ["cash", "debit", "credit_card"];
-const TXN_TYPES = ["income", "expense", "debt_payment", "credit_card_payment", "subscription", "adjustment"];
+const TXN_TYPES = ["income", "expense", "savings", "debt_payment", "credit_card_payment", "subscription", "adjustment"];
 const PRIORITIES = ["low", "medium", "high", "critical"];
 
 function defaultData() {
@@ -306,12 +306,14 @@ function calculateMonthlySummary(key) {
   const txns = appData.transactions.filter((t) => inMonth(t.date, key));
   const incomes = txns.filter((t) => t.type === "income");
   const consumption = txns.filter((t) => CONSUMPTION_TYPES.includes(t.type));
+  const savingsTxns = txns.filter((t) => t.type === "savings");
   const debtPayments = txns.filter((t) => DEBT_TYPES.includes(t.type));
 
   const txnIncome = incomes.reduce((s, t) => s + cleanNumber(t.amount), 0);
   const income = Math.max(txnIncome, getMonthlyIncome());
 
   const totalSpent = consumption.reduce((s, t) => s + cleanNumber(t.amount), 0);
+  const savingsContributed = savingsTxns.reduce((s, t) => s + cleanNumber(t.amount), 0);
   const debtPaid = debtPayments.reduce((s, t) => s + cleanNumber(t.amount), 0);
 
   // Cash that actually left the wallet this month (credit purchases don't, payments do).
@@ -320,7 +322,8 @@ function calculateMonthlySummary(key) {
     .reduce((s, t) => s + cleanNumber(t.amount), 0);
 
   const remaining = income - cashOut;
-  const savings = remaining;
+  const projectedSavings = remaining;
+  const savings = savingsContributed;
   const savingsRate = income > 0 ? (savings / income) * 100 : 0;
   const days = daysElapsedInMonth(key);
   const dailyAvg = days > 0 ? totalSpent / days : 0;
@@ -335,9 +338,9 @@ function calculateMonthlySummary(key) {
   });
 
   return {
-    key, txns, incomes, consumption, debtPayments,
+    key, txns, incomes, consumption, savingsTxns, debtPayments,
     income, txnIncome, totalSpent, debtPaid, cashOut,
-    remaining, savings, savingsRate, dailyAvg,
+    remaining, projectedSavings, savings, savingsContributed, savingsRate, dailyAvg,
     byCategory, byNecessity,
     essential: byNecessity.essential,
     optional: byNecessity.useful + byNecessity.unnecessary,
@@ -572,6 +575,19 @@ function reverseTransactionMovements(transactionId) {
   appData.cardMovements = appData.cardMovements.filter((m) => m.transactionId !== transactionId);
 }
 
+function reverseTransactionSideEffects(txnOrId) {
+  const txn = typeof txnOrId === "string" ? appData.transactions.find((t) => t.id === txnOrId) : txnOrId;
+  if (!txn) return;
+  reverseTransactionMovements(txn.id);
+  if (txn.type === "debt_payment" && txn.debtId) {
+    const debt = appData.debts.find((d) => d.id === txn.debtId);
+    if (debt) {
+      debt.totalDebt = Math.max(0, cleanNumber(debt.totalDebt) + cleanNumber(txn.amount));
+      debt.updatedAt = new Date().toISOString();
+    }
+  }
+}
+
 /* ---------------------------------------------------------------------------
    8. TRANSACTIONS ENGINE
    --------------------------------------------------------------------------- */
@@ -583,6 +599,9 @@ function deriveTxnFlags(type, method, cardId) {
   else if (CONSUMPTION_TYPES.includes(type)) {
     affectsCardBalance = method === "credit_card" && !!cardId;
     affectsCashFlow = method !== "credit_card";   // credit purchase doesn't move cash now
+  } else if (type === "savings") {
+    affectsCashFlow = true;
+    affectsCardBalance = false;
   } else if (type === "credit_card_payment") { affectsCashFlow = true; affectsCardBalance = !!cardId; }
   else if (type === "debt_payment") { affectsCashFlow = true; affectsCardBalance = false; }
   else if (type === "adjustment") { affectsCardBalance = !!cardId; affectsCashFlow = !cardId; }
@@ -607,6 +626,7 @@ function buildTransaction(input, existing) {
     notes: (input.notes || "").trim(),
     paymentMethod: method,
     cardId: flags.affectsCardBalance ? cardId : (type === "income" ? null : cardId),
+    debtId: input.debtId || null,
     affectsCashFlow: flags.affectsCashFlow,
     affectsCardBalance: flags.affectsCardBalance,
     createdAt: existing ? existing.createdAt : now,
@@ -616,17 +636,25 @@ function buildTransaction(input, existing) {
 
 // Apply a transaction's side effects to the relevant card.
 function applyTransactionSideEffects(txn) {
-  if (!txn.affectsCardBalance || !txn.cardId) return;
-  const opts = { date: txn.date, description: txn.description || txn.category, transactionId: txn.id };
-  if (CONSUMPTION_TYPES.includes(txn.type)) applyCreditCardPurchase(txn.cardId, txn.amount, opts);
-  else if (txn.type === "credit_card_payment") applyCreditCardPayment(txn.cardId, txn.amount, opts);
-  else if (txn.type === "adjustment") createCardMovement(appData.cards.find((c) => c.id === txn.cardId), "adjustment", txn.amount, opts);
+  if (txn.affectsCardBalance && txn.cardId) {
+    const opts = { date: txn.date, description: txn.description || txn.category, transactionId: txn.id };
+    if (CONSUMPTION_TYPES.includes(txn.type)) applyCreditCardPurchase(txn.cardId, txn.amount, opts);
+    else if (txn.type === "credit_card_payment") applyCreditCardPayment(txn.cardId, txn.amount, opts);
+    else if (txn.type === "adjustment") createCardMovement(appData.cards.find((c) => c.id === txn.cardId), "adjustment", txn.amount, opts);
+  }
+  if (txn.type === "debt_payment" && txn.debtId) {
+    const debt = appData.debts.find((d) => d.id === txn.debtId);
+    if (debt) {
+      debt.totalDebt = Math.max(0, cleanNumber(debt.totalDebt) - cleanNumber(txn.amount));
+      debt.updatedAt = new Date().toISOString();
+    }
+  }
 }
 
 function commitTransaction(input, existing) {
   // Reverse old side effects first so editing is clean.
   if (existing) {
-    reverseTransactionMovements(existing.id);
+    reverseTransactionSideEffects(existing);
     appData.transactions = appData.transactions.filter((t) => t.id !== existing.id);
   }
   const txn = buildTransaction(input, existing);
@@ -637,7 +665,7 @@ function commitTransaction(input, existing) {
 }
 
 function deleteTransaction(id) {
-  reverseTransactionMovements(id);
+  reverseTransactionSideEffects(id);
   appData.transactions = appData.transactions.filter((t) => t.id !== id);
   saveData();
 }
@@ -768,7 +796,7 @@ function evaluatePurchaseDecision(input) {
     return { verdict: "No comprar", cls: "danger", reason: `El costo supera tu presupuesto restante (quedan ${fmtMoney(remaining)}).` };
   }
   if (conservative && optional && !savingsMet) {
-    return { verdict: "Esperar 7 dias", cls: "warning", reason: "Savings goal isn't met yet and this is optional. Wait 7 days." };
+    return { verdict: "Esperar 7 dias", cls: "warning", reason: "La meta de ahorro aun no esta cubierta y esto es opcional. Espera 7 dias." };
   }
   if (input.need === "essential" || input.supports) {
     return { verdict: "Comprar", cls: "safe", reason: input.supports ? "Apoya salud, trabajo o familia y cabe en tu presupuesto." : "Marcado como esencial y dentro del presupuesto." };
@@ -979,11 +1007,11 @@ function cardCardHtml(c) {
       ${c.notes ? `<p class="muted">${escapeHtml(c.notes)}</p>` : ""}
       ${ledger}
       <div class="card-actions">
-        <button class="secondary-button" type="button" data-card-purchase="${c.id}">+ Purchase</button>
-        <button class="secondary-button" type="button" data-card-payment="${c.id}">Make payment</button>
+        <button class="secondary-button" type="button" data-card-purchase="${c.id}">+ Compra</button>
+        <button class="secondary-button" type="button" data-card-payment="${c.id}">Pagar</button>
         <button class="secondary-button" type="button" data-edit-card="${c.id}">Edit</button>
-        <button class="secondary-button" type="button" data-toggle-card="${c.id}">${c.isActive ? "Deactivate" : "Reactivate"}</button>
-        <button class="danger-button" type="button" data-del-card="${c.id}">Delete</button>
+        <button class="secondary-button" type="button" data-toggle-card="${c.id}">${c.isActive ? "Desactivar" : "Reactivar"}</button>
+        <button class="danger-button" type="button" data-del-card="${c.id}">Eliminar</button>
       </div>
     </article>`;
 }
@@ -1011,10 +1039,10 @@ function debtCardHtml(d) {
       </div>
       ${d.notes ? `<p class="muted">${escapeHtml(d.notes)}</p>` : ""}
       <div class="card-actions">
-        <button class="secondary-button" type="button" data-pay-debt="${d.id}">Make payment</button>
+        <button class="secondary-button" type="button" data-pay-debt="${d.id}">Pagar</button>
         <button class="secondary-button" type="button" data-edit-debt="${d.id}">Edit</button>
-        <button class="secondary-button" type="button" data-toggle-debt="${d.id}">${d.isActive ? "Deactivate" : "Reactivate"}</button>
-        <button class="danger-button" type="button" data-del-debt="${d.id}">Delete</button>
+        <button class="secondary-button" type="button" data-toggle-debt="${d.id}">${d.isActive ? "Desactivar" : "Reactivar"}</button>
+        <button class="danger-button" type="button" data-del-debt="${d.id}">Eliminar</button>
       </div>
     </article>`;
 }
@@ -1047,7 +1075,7 @@ function getFilteredTransactions() {
 function renderTransactions() {
   const list = getFilteredTransactions();
   const root = el("txn-list");
-  if (!list.length) { root.innerHTML = `<div class="empty-state">No transactions for ${monthLabel(viewMonth)} yet.</div>`; return; }
+  if (!list.length) { root.innerHTML = `<div class="empty-state">No hay movimientos en ${monthLabel(viewMonth)}.</div>`; return; }
   root.innerHTML = list.map((t) => {
     const inflow = t.type === "income";
     const sign = inflow ? "+" : "−";
@@ -1072,7 +1100,15 @@ function renderTransactions() {
   }).join("");
 }
 function prettyType(t) {
-  return { income: "income", expense: "expense", debt_payment: "debt pay", credit_card_payment: "card pay", subscription: "sub", adjustment: "adj" }[t] || t;
+  return {
+    income: "ingreso",
+    expense: "gasto",
+    savings: "ahorro",
+    debt_payment: "pago deuda",
+    credit_card_payment: "pago tarjeta",
+    subscription: "suscripcion",
+    adjustment: "ajuste"
+  }[t] || t;
 }
 
 /* ---------- Subscriptions ---------- */
@@ -1127,8 +1163,8 @@ function renderSubscriptions() {
 /* ---------- Decisions ---------- */
 function renderDecisions() {
   const decs = appData.purchaseDecisions;
-  const rejected = decs.filter((d) => d.verdict === "Do not buy");
-  const delayed = decs.filter((d) => d.verdict.startsWith("Wait"));
+  const rejected = decs.filter((d) => ["Do not buy", "No comprar"].includes(d.verdict));
+  const delayed = decs.filter((d) => String(d.verdict || "").startsWith("Wait") || String(d.verdict || "").startsWith("Esperar"));
   el("decision-stats").innerHTML = [
     ["Avoided (rejected)", fmtMoney(rejected.reduce((s, d) => s + cleanNumber(d.cost), 0))],
     ["Delayed", fmtMoney(delayed.reduce((s, d) => s + cleanNumber(d.cost), 0))],
@@ -1138,7 +1174,8 @@ function renderDecisions() {
   const root = el("decision-list");
   if (!decs.length) { root.innerHTML = `<div class="empty-state">No decisions yet. Use the form above before your next purchase.</div>`; return; }
   root.innerHTML = decs.slice().reverse().map((d) => {
-    const cls = d.verdict === "Do not buy" ? "unnecessary" : d.verdict.startsWith("Wait") ? "useful" : "essential";
+    const verdict = String(d.verdict || "");
+    const cls = ["Do not buy", "No comprar"].includes(verdict) ? "unnecessary" : (verdict.startsWith("Wait") || verdict.startsWith("Esperar")) ? "useful" : "essential";
     return `
       <div class="list-item">
         <div class="list-item__main">
@@ -1155,7 +1192,7 @@ function renderDecisions() {
 
 /* ---------- Budgets ---------- */
 function budgetActual(b, summary) {
-  if (b.type === "savings") return summary.savings;
+  if (b.type === "savings") return Math.max(0, summary.savings);
   if (b.type === "debt_payment") return summary.debtPaid;
   if (!b.category) return summary.totalSpent;
   return summary.byCategory[b.category] || 0;
@@ -1220,9 +1257,10 @@ function renderReports() {
   const util = calculateGlobalCreditUtilization();
 
   el("report-stats").innerHTML = [
-    ["Income", fmtMoney(s.income)], ["Expenses", fmtMoney(s.totalSpent)],
-    ["Net savings", fmtMoney(s.savings)], ["Savings rate", fmtPct(s.savingsRate)],
-    ["Debt paid", fmtMoney(s.debtPaid)], ["Total debt", fmtMoney(calculateTotalDebt())]
+    ["Ingreso", fmtMoney(s.income)], ["Gastos", fmtMoney(s.totalSpent)],
+    ["Ahorro registrado", fmtMoney(s.savings)], ["Tasa de ahorro", fmtPct(s.savingsRate)],
+    ["Sin asignar", fmtMoney(s.remaining)], ["Ahorro potencial", fmtMoney(s.projectedSavings)],
+    ["Deuda pagada", fmtMoney(s.debtPaid)], ["Deuda total", fmtMoney(calculateTotalDebt())]
   ].map(([t, v]) => `<article class="summary-card"><strong>${escapeHtml(t)}</strong><p>${escapeHtml(v)}</p></article>`).join("");
 
   renderBarChart("report-category-chart", s.byCategory, s.totalSpent);
@@ -1328,47 +1366,53 @@ function closeFormModal() { el("form-modal").classList.add("hidden"); el("form-m
 function optionList(items, selected) {
   return items.map((c) => `<option ${c === selected ? "selected" : ""}>${escapeHtml(c)}</option>`).join("");
 }
+function debtOptions(selected, includeBlank) {
+  const opts = activeDebts().map((d) => `<option value="${d.id}" ${d.id === selected ? "selected" : ""}>${escapeHtml(d.name)}${d.institution ? " - " + escapeHtml(d.institution) : ""}</option>`).join("");
+  return (includeBlank ? `<option value="">Sin vincular</option>` : "") + opts;
+}
 function cardOptions(selected, includeBlank) {
   const opts = activeCards().map((c) => `<option value="${c.id}" ${c.id === selected ? "selected" : ""}>${escapeHtml(c.bank)} — ${escapeHtml(c.name)}</option>`).join("");
-  return (includeBlank ? `<option value="">— select card —</option>` : "") + opts;
+  return (includeBlank ? `<option value="">Selecciona tarjeta</option>` : "") + opts;
 }
 
 /* ----- Transaction modal ----- */
 function openTransactionModal(existing, preset) {
   const t = existing || Object.assign({ type: "expense", date: todayISO(), necessity: "useful", paymentMethod: "debit" }, preset || {});
-  const cats = t.type === "income" ? appData.settings.incomeCategories : appData.settings.expenseCategories;
-  openFormModal(existing ? "Edit transaction" : "Add transaction", `
+  const cats = t.type === "income" ? appData.settings.incomeCategories : t.type === "savings" ? ["Ahorro"] : appData.settings.expenseCategories;
+  openFormModal(existing ? "Editar movimiento" : "Agregar movimiento", `
     <form id="txn-form" class="form-panel" style="box-shadow:none;border:0;padding:0;margin:0">
       <div class="form-grid">
-        <label>Type
+        <label>Tipo
           <select id="tf-type">
-            ${["expense", "income", "credit_card_payment", "debt_payment", "subscription", "adjustment"].map((x) => `<option value="${x}" ${t.type === x ? "selected" : ""}>${prettyType(x)}</option>`).join("")}
+            ${["expense", "income", "savings", "credit_card_payment", "debt_payment", "subscription", "adjustment"].map((x) => `<option value="${x}" ${t.type === x ? "selected" : ""}>${prettyType(x)}</option>`).join("")}
           </select>
         </label>
-        <label>Amount<input id="tf-amount" inputmode="decimal" value="${t.amount ?? ""}" required></label>
-        <label>Date<input id="tf-date" type="date" value="${t.date}" required></label>
-        <label>Category<select id="tf-category">${optionList(cats, t.category)}</select></label>
-        <label>Necessity
+        <label>Monto<input id="tf-amount" inputmode="decimal" value="${t.amount ?? ""}" required></label>
+        <label>Fecha<input id="tf-date" type="date" value="${t.date}" required></label>
+        <label>Categoria<select id="tf-category">${optionList(cats, t.category)}</select></label>
+        <label>Necesidad
           <select id="tf-necessity">${optionList(["essential", "useful", "unnecessary"], t.necessity)}</select>
         </label>
-        <label>Payment method
+        <label>Metodo de pago
           <select id="tf-method">${optionList(PAYMENT_METHODS, t.paymentMethod)}</select>
         </label>
-        <label id="tf-card-wrap" class="hidden">Card<select id="tf-card">${cardOptions(t.cardId, true)}</select></label>
+        <label id="tf-card-wrap" class="hidden">Tarjeta<select id="tf-card">${cardOptions(t.cardId, true)}</select></label>
+        <label id="tf-debt-wrap" class="hidden">Deuda vinculada<select id="tf-debt">${debtOptions(t.debtId, true)}</select></label>
       </div>
-      <label>Description<input id="tf-desc" value="${escapeHtml(t.description || "")}"></label>
-      <label>Notes<textarea id="tf-notes" rows="2">${escapeHtml(t.notes || "")}</textarea></label>
-      <button type="submit" class="primary-button btn-block">${existing ? "Save changes" : "Add transaction"}</button>
+      <label>Descripcion<input id="tf-desc" value="${escapeHtml(t.description || "")}"></label>
+      <label>Notas<textarea id="tf-notes" rows="2">${escapeHtml(t.notes || "")}</textarea></label>
+      <button type="submit" class="primary-button btn-block">${existing ? "Guardar cambios" : "Agregar movimiento"}</button>
     </form>`);
 
-  const typeSel = el("tf-type"), methodSel = el("tf-method"), cardWrap = el("tf-card-wrap");
+  const typeSel = el("tf-type"), methodSel = el("tf-method"), cardWrap = el("tf-card-wrap"), debtWrap = el("tf-debt-wrap");
   function refreshCardField() {
     const type = typeSel.value, method = methodSel.value;
     const needsCard = (CONSUMPTION_TYPES.includes(type) && method === "credit_card") || type === "credit_card_payment" || (type === "adjustment" && method === "credit_card");
     cardWrap.classList.toggle("hidden", !needsCard);
+    debtWrap.classList.toggle("hidden", type !== "debt_payment");
   }
   function refreshCategories() {
-    const list = typeSel.value === "income" ? appData.settings.incomeCategories : appData.settings.expenseCategories;
+    const list = typeSel.value === "income" ? appData.settings.incomeCategories : typeSel.value === "savings" ? ["Ahorro"] : appData.settings.expenseCategories;
     el("tf-category").innerHTML = optionList(list, el("tf-category").value);
   }
   typeSel.addEventListener("change", () => { refreshCategories(); refreshCardField(); });
@@ -1378,19 +1422,19 @@ function openTransactionModal(existing, preset) {
   el("txn-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const amount = cleanNumber(el("tf-amount").value);
-    if (!(amount >= 0) || amount === 0) { toast("Enter a valid amount."); return; }
+    if (!(amount >= 0) || amount === 0) { toast("Ingresa un monto valido."); return; }
     const type = el("tf-type").value;
     const method = el("tf-method").value;
     const needsCard = (CONSUMPTION_TYPES.includes(type) && method === "credit_card") || type === "credit_card_payment" || (type === "adjustment" && method === "credit_card");
     const cardId = needsCard ? el("tf-card").value : null;
-    if (needsCard && !cardId) { toast("Select a card for this transaction."); return; }
+    if (needsCard && !cardId) { toast("Selecciona una tarjeta."); return; }
     commitTransaction({
       type, amount, date: el("tf-date").value, category: el("tf-category").value,
       description: el("tf-desc").value, necessity: el("tf-necessity").value,
-      paymentMethod: method, cardId, notes: el("tf-notes").value
+      paymentMethod: method, cardId, debtId: type === "debt_payment" ? el("tf-debt").value || null : null, notes: el("tf-notes").value
     }, existing);
     closeFormModal(); renderAll();
-    toast(existing ? "Transaction updated." : "Transaction added.");
+    toast(existing ? "Movimiento actualizado." : "Movimiento agregado.");
   });
 }
 
@@ -1573,12 +1617,9 @@ function openDebtPaymentModal(debt) {
     commitTransaction({
       type: "debt_payment", amount, date: el("dpf-date").value,
       category: "Debt Payments", description: `${debt.name} payment`,
-      necessity: "essential", paymentMethod: el("dpf-method").value
+      necessity: "essential", paymentMethod: el("dpf-method").value, debtId: debt.id
     }, null);
-    // Reduce the debt total directly.
-    debt.totalDebt = Math.max(0, cleanNumber(debt.totalDebt) - amount);
-    debt.updatedAt = new Date().toISOString();
-    saveData(); closeFormModal(); renderAll(); toast("Debt payment registered.");
+    closeFormModal(); renderAll(); toast("Debt payment registered.");
   });
 }
 
@@ -1720,12 +1761,12 @@ function transactionExportPlan(range) {
 
 function exportTransactionsCSV(range) {
   const { predicate, name } = transactionExportPlan(range);
-  const rows = [["id", "date", "type", "amount", "category", "description", "necessity", "paymentMethod", "cardId", "notes"]];
+  const rows = [["id", "date", "type", "amount", "category", "description", "necessity", "paymentMethod", "cardId", "debtId", "notes"]];
   appData.transactions
     .filter(predicate)
     .slice()
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
-    .forEach((t) => rows.push([t.id, t.date, t.type, t.amount, t.category, t.description, t.necessity, t.paymentMethod, t.cardId || "", t.notes]));
+    .forEach((t) => rows.push([t.id, t.date, t.type, t.amount, t.category, t.description, t.necessity, t.paymentMethod, t.cardId || "", t.debtId || "", t.notes]));
   if (rows.length === 1) { toast("No hay transacciones en ese periodo."); return false; }
   downloadFile(name, rowsToCsv(rows), "text/csv");
   toast(`CSV exportado (${rows.length - 1} transacciones).`);
@@ -1754,7 +1795,7 @@ function exportCSV(kind) {
     const s = calculateMonthlySummary(viewMonth);
     rows.push(["metric", "value"]);
     rows.push(["month", viewMonth], ["income", s.income.toFixed(2)], ["expenses", s.totalSpent.toFixed(2)],
-      ["netSavings", s.savings.toFixed(2)], ["savingsRate%", s.savingsRate.toFixed(1)],
+      ["savings", s.savings.toFixed(2)], ["potentialSavings", s.projectedSavings.toFixed(2)], ["savingsRate%", s.savingsRate.toFixed(1)],
       ["essential", s.byNecessity.essential.toFixed(2)], ["useful", s.byNecessity.useful.toFixed(2)],
       ["unnecessary", s.byNecessity.unnecessary.toFixed(2)], ["debtPaid", s.debtPaid.toFixed(2)],
       ["totalDebt", calculateTotalDebt().toFixed(2)], ["creditUtilization%", (calculateGlobalCreditUtilization() || 0).toFixed(1)]);
@@ -1873,7 +1914,8 @@ function importTransactionsCSV(file) {
         const date = normalizeImportDate(get("date"));
         const amount = cleanNumber(get("amount"));
         if (!date || !(amount >= 0)) { skipped++; continue; }
-        const type = get("type").toLowerCase() === "income" ? "income" : "expense";
+        const rawType = get("type").toLowerCase();
+        const type = ["income", "expense", "savings"].includes(rawType) ? rawType : "expense";
         let necessity = get("necessity").toLowerCase();
         if (!["essential", "useful", "unnecessary"].includes(necessity)) necessity = "useful";
         let method = get("payment").toLowerCase();
@@ -1985,7 +2027,7 @@ function fillCategorySelects() {
   const inc = appData.settings.incomeCategories;
   el("qa-category").innerHTML = optionList(exp, "");
   el("dec-category").innerHTML = optionList(exp, "");
-  const all = [...new Set([...exp, ...inc])];
+  const all = [...new Set([...exp, ...inc, "Ahorro"])];
   el("txn-filter-category").innerHTML = `<option value="">All</option>` + optionList(all, "");
 }
 function fillCardSelects() {
